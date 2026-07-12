@@ -3,7 +3,7 @@
 #include <fineline.h>
 
 /* Allocate and initialize a fineline_t */
-fineline_t *fineline_alloc(void *context)
+fineline_t *fineline_alloc()
 {
 	/* Allocate it */
 	fineline_t *fine = malloc(sizeof(fineline_t));
@@ -13,7 +13,6 @@ fineline_t *fineline_alloc(void *context)
 	fine->dynamic = 0; /* just return history[0] every time */
 	fine->matchparen = 1;
 	fine->tabstop = 4;
-	fine->context = context;
 	fine->columns = 80; /* These are likely to be overridden */
 	fine->rows = 24;
 	fine->selection = -1;

@@ -65,7 +65,7 @@ size_t fineline_char_line_offset(const char *buf, int line)
 /* Return the column number of a given offset into a line buffer.  This knows
  * about newlines, but not about the width of the prompt, or terminal wrapping.
  */
-int fineline_char_column_number(const char *buf, int cursor)
+int fineline_char_column_number(const char *buf, int cursor, int tabstop)
 {
 	int	col;
 	wchar_t	wc;
@@ -81,6 +81,10 @@ int fineline_char_column_number(const char *buf, int cursor)
 			return -1;
 		if (wc == '\n' || wc == '\r')
 			col = 0;
+		else if (wc == '\t')
+			col = tabstop - (col + tabstop) % tabstop;
+		else if ((wc >= 0 && wc <= 0x1f) || (wc >= 0x7f && wc <= 0x9f))
+			col += 2; /* for ^X notation of control chars */
 		else
 			col += wcwidth(wc);
 	}
@@ -95,7 +99,7 @@ int fineline_char_column_number(const char *buf, int cursor)
  * This function doesn't know about the prompt width, or terminal columns.
  * It only deals with "logical" lines.
  */
-const char *fineline_char_at_column(const char *line, int wantcol, int *refcol)
+const char *fineline_char_at_column(const char *line, int wantcol, int *refcol, int tabstop)
 {
 	wchar_t	wc;
 	size_t	wclen;
@@ -105,18 +109,26 @@ const char *fineline_char_at_column(const char *line, int wantcol, int *refcol)
 
 	prev = line;
 	memset(&state, 0, sizeof state);
-	for (col = 0; col < wantcol && *line && *line != '\n'; col += wcwidth(wc))  {
+	for (col = 0; col < wantcol && *line && *line != '\n';)  {
 		/* Fetch the next character */
 		wclen = mbrtowc(&wc, line, MB_LEN_MAX, &state);
 		if (wclen <= 0)
 			return NULL;
 		prev = line;
 		line += wclen;
+
+		/* Add its width */
+		if (wc == '\t')
+			col += tabstop - (col + tabstop) % tabstop;
+		else if ((wc >= 0 && wc <= 0x1f) || (wc >= 0x7f && wc <= 0x9f))
+			col += 2; /* for ^X notation of control chars */
+		else
+			col += wcwidth(wc);
 	}
 
 	/* If we went too far, then return the previous character.  This can
 	 * happen if the requested column is in the middle of a double-width
-	 * character.
+	 * character or '\t'.
 	 */
 	if (col > wantcol) {
 		line = prev;

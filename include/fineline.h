@@ -187,7 +187,7 @@ typedef struct fineline_s {
 
 
 /* fineline.c -- low level allocate and free */
-fineline_t *fineline_alloc(void *context);
+fineline_t *fineline_alloc(void);
 void fineline_free(fineline_t *);
 
 /* tty.c -- functions that specifically let it work on a plain tty.  The
@@ -202,8 +202,8 @@ char *fineline(const char *prompt);
 size_t fineline_char_size(const char *text, int charcount);
 int fineline_char_line_number(const char *buf, size_t cursor);
 size_t fineline_char_line_offset(const char *buf, int line);
-int fineline_char_column_number(const char *buf, int cursor);
-const char *fineline_char_at_column(const char *line, int wantcol, int *refcol);
+int fineline_char_column_number(const char *buf, int cursor, int tabstop);
+const char *fineline_char_at_column(const char *line, int wantcol, int *refcol, int tabstop);
 int fineline_char_delta(const char *buf, int cursor, int delta);
 
 /* history.c -- Functions for manipulating or accessing history.  Since the
@@ -222,7 +222,7 @@ void fineline_history_edit(fineline_t *fine);
 int fineline_edit(fineline_t *fine, fineline_edit_t edit);
 void fineline_edit_text(fineline_t *fine, const char *text, size_t len);
 void fineline_edit_char(fineline_t *fine, wchar_t ch);
-fineline_edit_t fineline_edit_ctrl(wchar_t wc);
+fineline_edit_t fineline_edit_ctrl(fineline_t *fine, wchar_t wc);
 
 /* hint.c -- Registers a function for doing hinting.  The function will be
  * called when the cursor is at the end of a non-empty line, and it should

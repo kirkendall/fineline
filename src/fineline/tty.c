@@ -192,7 +192,7 @@ static size_t count_char_matches(char *buf, size_t bufused)
  * fineline_edit_t key code.  The returned value is a "long" instead of
  * "wchar_t" because some OSes use UTF-16 for wchar_t instead of full Unicode.
  */
-static long get_key(int quoted)
+static long get_key(fineline_t *fine)
 {
 	static char	buf[20];
 	static ssize_t	bufused, charused;
@@ -226,7 +226,7 @@ static long get_key(int quoted)
 	timedout = 0;
 	for (;;) {
 		/* Do we have a cursor key? */
-		if (quoted)
+		if (fine->quote)
 			k = -1; /* can't be a key */
 		else {
 			k = count_key_matches(buf, bufused, timedout);
@@ -260,11 +260,9 @@ static long get_key(int quoted)
 				 * to an edit command, then return the edit
 				 * command
 				 */
-				if (!quoted) {
-					edit = fineline_edit_ctrl(wc);
-					if (edit > FINELINE_MIN)
-						return edit;
-				}
+				edit = fineline_edit_ctrl(fine, wc);
+				if (edit > FINELINE_MIN)
+					return edit;
 
 				/* Return the wchar_t */
 				return wc;
@@ -356,7 +354,7 @@ static void ttytext(fineline_t *fine, const char *style, const char *text, size_
 fineline_t *fineline_tty_alloc()
 {
 	/* Allocate it */
-	fineline_t *fine = fineline_alloc(NULL);
+	fineline_t *fine = fineline_alloc();
 
 	/* Initialize it */
 	fine->up = ttyup;
@@ -401,7 +399,7 @@ char *fineline_tty(fineline_t *fine, const char *prompt)
 	fineline_active(0);
 	for (;;) {
 		fineline_draw(fine, 0);
-		key = get_key(fine->quote);
+		key = get_key(fine);
 		if (key > FINELINE_MIN && key < FINELINE_MAX) {
 			result = fineline_edit(fine, (fineline_edit_t)key);
 			if (result < 0)

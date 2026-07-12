@@ -222,17 +222,27 @@ int fineline_edit(fineline_t *fine, fineline_edit_t edit)
 		break;
 
 	case FINELINE_BACK_TAB:
+		/* If the preceding character is a literal tab, just delete it */
+		if (fine->cursor > 0 && fine->line[fine->cursor - 1] == '\t') {
+			fine->cursor--;
+			if (fine->line[fine->cursor + 1]) {
+				/* This also moves the '\0' after the line */
+				memmove(fine->line + fine->cursor, fine->line + fine->cursor + 1, strlen (fine->line + fine->cursor));
+			}
+			break;
+		}
+
 		/* Delete spaces to previous tabstop */
 
 		/* Find the desired column */
-		col = fineline_char_column_number(fine->line, fine->cursor);
+		col = fineline_char_column_number(fine->line, fine->cursor, fine->tabstop);
 		if (col > 0 && col % fine->tabstop == 0)
 			col -= fine->tabstop;
 		else
 			col -= col % fine->tabstop;
 
 		/* Find the character at that column */
-		moved = fineline_char_at_column(fine->line, col, NULL);
+		moved = fineline_char_at_column(fine->line, col, NULL, fine->tabstop);
 
 		/* We want to delete whitespace characters between the moved
 		 * position and the cursor, but if there are non-whitespace
@@ -240,7 +250,7 @@ int fineline_edit(fineline_t *fine, fineline_edit_t edit)
 		 */
 		for (start = fine->cursor - 1;
 		     &fine->line[start] > moved
-		        && (fine->line[start] == ' ' || fine->line[start] == '\t');
+		        && fine->line[start - 1] == ' ';
 		     start--) {
 		}
 		if (start != fine->cursor) {
@@ -259,7 +269,7 @@ int fineline_edit(fineline_t *fine, fineline_edit_t edit)
 
 	case FINELINE_TAB:	
 		/* Insert spaces to next tabstop */
-		col = fineline_char_column_number(fine->line, fine->cursor);
+		col = fineline_char_column_number(fine->line, fine->cursor, fine->tabstop);
 		do {
 			fineline_edit_char(fine, L' ');
 			col++;
@@ -355,8 +365,8 @@ int fineline_edit(fineline_t *fine, fineline_edit_t edit)
 		len = fineline_char_line_offset(fine->line, lnum - 1);
 		if (len || lnum == 1) {
 			/* Yes, just move the cursor */
-			col = fineline_char_column_number(fine->line, fine->cursor);
-			fine->cursor = fineline_char_at_column(fine->line + len, col, NULL) - fine->line;
+			col = fineline_char_column_number(fine->line, fine->cursor, fine->tabstop);
+			fine->cursor = fineline_char_at_column(fine->line + len, col, NULL, fine->tabstop) - fine->line;
 		} else {
 			/* Otherwise move back in history */
 			fineline_history_show(fine, 1);
@@ -373,8 +383,8 @@ int fineline_edit(fineline_t *fine, fineline_edit_t edit)
 		len = fineline_char_line_offset(fine->line, lnum + 1);
 		if (len) {
 			/* Yes, just move the cursor */
-			col = fineline_char_column_number(fine->line, fine->cursor);
-			fine->cursor = fineline_char_at_column(fine->line + len, col, NULL) - fine->line;
+			col = fineline_char_column_number(fine->line, fine->cursor, fine->tabstop);
+			fine->cursor = fineline_char_at_column(fine->line + len, col, NULL, fine->tabstop) - fine->line;
 		} else {
 			/* Otherwise move forward in history */
 			fineline_history_show(fine, -1);
@@ -503,8 +513,12 @@ int fineline_edit(fineline_t *fine, fineline_edit_t edit)
 		fineline_history_bounce(fine);
 		return 0;
 
+	case FINELINE_QUOTE:
+		/* treat next character literally (like text) */
+		fine->quote = 1;
+		return 0;
+
 	/* These cases indicate special conditions */
-	case FINELINE_QUOTE:	/* treat next character literally (like text) */
 	case FINELINE_PAGE_DOWN:/* scroll forward */
 	case FINELINE_PAGE_UP:	/* scroll back */
 	case FINELINE_REDRAW:	/* redraw the input from scratch */
@@ -588,7 +602,7 @@ void fineline_edit_char(fineline_t *fine, wchar_t ch)
 /* Convert a control character into an edit command.  If the character isn't
  * a control character, or isn't a known command, then return FINELINE_MIN.
  */
-fineline_edit_t fineline_edit_ctrl(wchar_t ch)
+fineline_edit_t fineline_edit_ctrl(fineline_t *fine, wchar_t ch)
 {
 	static fineline_edit_t cmds[] = {
 	    FINELINE_MIN,	/* ^@ */
@@ -624,6 +638,12 @@ fineline_edit_t fineline_edit_ctrl(wchar_t ch)
 	    FINELINE_MIN,	/* ^^ <Ctrl-Shift-6> */
 	    FINELINE_S_LINE 	/* ^_ <Ctrl-Shift-Minus> - select whole lines */
 	};
+
+	/* If quoting via ^\ is in effect, then nothing is a command */
+	if (fine->quote) {
+		fine->quote = 0;
+		return FINELINE_MIN;
+	}
 
 	/* Range check */
 	if ((ch & 0xfffff) >= ' ')
