@@ -1,0 +1,240 @@
+.TH fineline 3
+.SH NAME
+fineline(), fineline_alloc(), fineline_free(), fineline_tty(), fineline_tty_alloc(), fineline_curses(), fineline_curses_alloc() \- Line Input Library
+
+.SH SYNOPSIS
+
+.B char
+.RB *fineline "(const char"
+.IB prompt );
+.br
+.B fineline
+.RB *fineline_tty_alloc (void);
+.br
+.B char
+.RB *fineline_tty "(fineline_t"
+.IB *fine ", const char" *prompt );
+.br
+.B fineline_t
+.RB *fineline_alloc (void);
+.br
+.B void
+.RB fineline_free (fineline_t
+.IB fine );
+.br
+.B fineline
+.RB *fineline_curses_alloc (void);
+.br
+.B char
+.RB *fineline_curses (fineline_t
+.IB fine ", const char *prompt);
+
+.SH DESCRIPTION
+The fineline library is a replacement for the GNU ReadLine library.
+The main differences are:
+.IP " \(bu" 3em
+Fineline can run in an ncursesw window, in addition to reading from a plain tty.
+This is the main justification for this library.
+.IP " \(bu" 3em
+Fineline uses common editing commands such as ^C/^V for copy/paste,
+^F/^R for forward/backward searches, ^Z/^Y for undo/redo, and so on.
+The complete list is included later in this page.
+.IP " \(bu" 3em
+Fineline's name completion mechanism has a cleaner interface.
+.IP " \(bu" 3em
+Fineline supports multi-line inputs,
+syntax coloring,
+hinting (such as showing function arguments), and
+asynchronous chat.
+.P
+Its editing capabilities are good enough that it can make a decent text editor.
+That's what the "fled" program is.
+
+.SH "USER EDIT COMMANDS"
+The cursor keypad keys do what you would expect.
+On multi-line inputs,
+the up and down keys move from line to line within the input,
+except moving off the top or bottom will jump to a history entry.
+Using <Ctrl> with a side arrow key moves by words instead of characters.
+Using <Ctrl> with an up/down arrow key moves through history even on multi-line inputs.
+.P
+Using <Shift> with any movement key will start or extend a text selection.
+You can then use <Ctrl-X> to delete it, <Ctrl-C> to copy it.
+.P
+The other commands are all control characters.
+These are:
+.TS
+c l
+<Ctrl-@>	--
+<Ctrl-A>	Select all, leaving cursor at end.
+<Ctrl-B>	Bounce between current input and history
+<Ctrl-C>	Copy selected text to the cut buffer
+<Ctrl-D>	End input, exit program
+<Ctrl-E>	Invoke an external editor
+<Ctrl-F>	PROMPT for "find" text, and search forward
+<Ctrl-G>	PROMPT for a line number or function name, and go there
+<Ctrl-H>	<Backspace>
+<Ctrl-I>	<Tab> - name completion
+<Ctrl-J>	Linefeed, same as <Enter>
+<Ctrl-K>	--
+<Ctrl-L>	<FormFeed> - redraw the input from scratch
+<Ctrl-M>	<Enter>, either process the line or insert a newline
+<Ctrl-N>	Repeat search in forward direction
+<Ctrl-O>	--
+<Ctrl-P>	Repeat search in reverse direction
+<Ctrl-Q>	Quit editing a file without saving it (in "fled" editor)
+<Ctrl-R>	PROMPT for "find" text, and search backward
+<Ctrl-S>	Save a file and quit (in "fled" editor)
+<Ctrl-T>	--
+<Ctrl-U>	Delete to start of line or start of input
+<Ctrl-V>	Paste
+<Ctrl-W>	Delete to start of word.
+<Ctrl-X>	Cut selected text
+<Ctrl-Y>	Redo
+<Ctrl-Z>	Undo
+<Ctrl-[>	<Esc> Save to history without processing, and then start a new input
+<Ctrl-\e>	Quote the next character (insert it even if Ctrl or cursor key)
+<Ctrl-]>	--
+<Ctrl-^>	--
+<Ctrl-_>	--
+.TE
+
+.SH "BASIC TTY USAGE"
+The simplest way to use fineline is by calling the
+.RI fineline( prompt )
+function.
+This is intended to be a drop-in replacement for GNU readline().
+It displays the prompt, reads a line, and returns it as a dynamically-allocated
+string, which the calling program is responsible for freeing.
+.P
+.nf
+	#include <stdio.h>    /* for puts() */
+	#include <stdlib.h>   /* for free() */
+	#include <fineline.h>
+
+	int main(int argc, char **argv)
+	{
+		char	*line;
+
+		while ((line = fineline("Test> ") != NULL) {
+			puts(line);
+			free(line);
+		}
+		return 0;
+	}
+.fi
+.P
+Most of the more sophisticated features such as syntax coloring require
+setting options or pointers to callback functions.
+These are stored in a
+.B fineline_t
+struct.
+For simplicity's sake, the fineline() function uses an internal
+.B fineline_t
+which isn't available to you.
+You'll need to allocate one via fineline_tty_alloc(), configure it, use
+.RI fineline_tty( fine ", " prompt )
+to read lines, and then
+.RI fineline_free( fine )
+to free it.
+.P
+.nf
+	#include <stdio.h>
+	#include <stdlib.h>
+	#include <fineline.h>
+
+	int main(int argc, char *argv)
+	{
+		fineline_t *fine;
+		char	*line;
+
+		/* Allocate a fineline_t */
+		fine = fineline_tty_alloc();
+
+		/* Initialize the fineline_t.  You can store function
+		 * pointers in it, set options, load history, etc.
+		 */
+		fineline_history_load(fine, "history");
+
+		/* Do the prompting */
+		while ((line = fineline_tty(fine, "Test> ")) != NULL) {
+			puts(line);
+			free(line);
+		}
+
+		/* Save the history to a file */
+		fineline_history_save(fine, "history");
+
+		/* Clean up */
+		fineline_free(fine);
+
+		return 0;
+	}
+.fi
+
+.SH "BASIC CURSES USAGE"
+This is specifically designed to work with the
+.BR ncurses (3)
+version of the curses full-screen library.
+Since fineline supports UTF-8 text, you should specifically uses the
+"ncursesw" variant.
+.P
+Usage is very similar to second the "tty" example above,
+except "tty" in function names is replaced by "curses"
+so you'll be calling fineline_curses_alloc() and
+.RI fineline_curses( fine ).
+.P
+In order to avoid linking dependencies when using the shared library
+version of fineline,
+the curses-dependent functions are not compiled into the library.
+They're defined in the fineline.h header, but only if FINELINE_CURSES and
+NCURSES_WIDE are defined.
+NCURSES_WIDE should be defined in the ncursesw header file, but you'll need
+to define FINELINE_CURSES yourself.
+If your program is split across multiple source files, you should only
+define FINELINE_CURSES in one of them, to avoid redefining the functions.
+.P
+.nf
+	#include <ncursesw/curses.h>
+	#define FINELINE_CURSES
+	#include <fineline.h>
+
+	int main(int argc, char **argv)
+	{
+		fineline_t *fine;
+		char *line;
+
+		initscr();
+		raw();
+		noecho();
+
+		fine = fineline_curses_alloc();
+		fineline_history_load(fine, "history");
+
+		while ((line = fineline_curses(stdscr, fine, "Test> ")) != NULL) {
+			addstr(line);
+			addch('\n');
+			free(line);
+		}
+
+		fineline_history_save(fine, "history");
+		fineline_free(fine);
+		return 0;
+	}
+.fi
+
+.SH HISTORY
+.SH "TEXT STYLES"
+.SH "SYNTAX COLORING"
+.SH "NAME COMPLETION"
+.SH "HINTING"
+.SH "ASYNCHRONOUS CHAT"
+.SH "FINELINE_T"
+
+
+.SH "SEE ALSO"
+.BR fled (1),
+.BR readline (3)
+
+.SH AUTHOR
+Steve Kirkendall, kirkenda@gmail.com
