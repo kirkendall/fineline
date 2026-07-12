@@ -22,7 +22,7 @@ gdb: tryfl
 	LD_LIBRARY_PATH=$(LIB) gdb tryfl
 
 tags: src/*/*.[ch] $(INCLUDE)/fineline.h
-	elvtags $(SRC) fineline.h
+	elvtags src/*/*.[ch] $(INCLUDE)/fineline.h
 
 clean:
 	$(RM) tryfl
