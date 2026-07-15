@@ -17,6 +17,9 @@ fineline_t *fineline_alloc()
 	fine->rows = 24;
 	fine->selection = -1;
 
+	/* Assume the external editor will support "+line" */
+	fine->editorplusline = 1;
+
 	/* History size must be at least 1 */
 	fine->historysize = 1;
 	fine->historyused = 0;

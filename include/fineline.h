@@ -62,6 +62,7 @@ typedef enum {
 	FINELINE_QUIT,		/* Expect no more lines (exit program) */
 	FINELINE_REDRAW,	/* Redraw entry from scratch */
 	FINELINE_RESIZE,	/* the window was resized */
+	FINELINE_EXTERNAL,	/* invoke an external editor on the input */
 
 	/* If application-specific codes are needed, add them after this */
 	FINELINE_MAX		/* Highest key code */
@@ -149,6 +150,11 @@ typedef struct fineline_s {
 	fineline_image_t *(*image_hook)(struct fineline_s *, int plain);
 	int (*edit_hook)(struct fineline_s *, fineline_edit_t edit);
 	int (*edit_text_hook)(struct fineline_s *, const char *text, size_t len);
+	/* These are mostly related to the external editor */
+	char	*externaleditor;/* Program to invoke for ^E */
+	char	*editorsuffix;	/* filename extension to use for temp file */
+	int	editorplusline;	/* Use "+line" to move cursor to a given line */
+	void	(*refresh_hook)(struct fineline_s *fine); /* called after editor exits */
 
 	/* Hooks that allow cut/paste between applications */
 	void (*postcopy_hook)(const char *text, size_t len);

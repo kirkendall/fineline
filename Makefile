@@ -29,3 +29,7 @@ clean:
 	$(RM) tags
 	cd src/fineline; make clean
 	cd src/fled; make clean
+
+wc:
+	@echo $$(find . -name '*.[ch]' -exec cat {} \;|wc -l) lines of C code
+	@echo $$(find . -name '*.[13]' -exec cat {} \;|wc -l) lines of documentation

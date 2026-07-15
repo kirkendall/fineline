@@ -1,6 +1,9 @@
+#include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <wchar.h>
+#include <sys/stat.h>
 #include <fineline.h>
 
 /* edit.c -- The basic line editor. */
@@ -45,6 +48,109 @@ static void copypaste(fineline_t *fine, int copy, int cut, int paste)
 		len = fineline_paste_size();
 		fineline_edit_text(fine, fineline_paste(), len);
 	}
+}
+
+/* Invoke an external editor on the current input.  If no external editor is
+ * available, then return 1 to indicate an error.  If the editor runs okay
+ * then reload the input, call the refresh callback (if any), and resume input.
+ */
+static int external_editor(fineline_t *fine)
+{
+	char	filename[256], *buf;
+	size_t	len;
+	int	pos, lineno;
+	FILE	*fp;
+	struct stat st;
+
+	/* If not set, then try looking at $VISUAL or $EDITOR */
+	if (!fine->externaleditor)
+		fine->externaleditor = getenv("VISUAL");
+	if (!fine->externaleditor)
+		fine->externaleditor = getenv("EDITOR");
+	if (!fine->externaleditor)
+		return 1; /* No editor */
+
+	/* Create a temporary file to store the line.  We don't use mkstemp()
+	 * because we want to control the filename extension so the editor can
+	 * hopefully apply the correct syntax highlighting.
+	 */
+	if (fine->editorsuffix)
+		snprintf(filename, sizeof filename, "fineline%lx.%s", (long)fine, fine->editorsuffix);
+	else
+		snprintf(filename, sizeof filename, "fineline%lx", (long)fine);
+	fp = fopen(filename, "w");
+	if (!fp)
+		return 1; /* Couldn't create temp file */
+	fwrite(fine->line, 1, strlen(fine->line), fp);
+	fputc('\n', fp);
+	fclose(fp);
+
+	/* Find the line number */
+	for (lineno = 1, pos = 0; pos < fine->cursor; pos++)
+		if (fine->line[pos] == '\n')
+			lineno++;
+
+	/* Build a command line to run the editor */
+	len = strlen(fine->externaleditor) + strlen(filename) + 20;
+	buf = malloc(len);
+	if (fine->editorplusline)
+		snprintf(buf, len, "\"%s\" +%d %s", fine->externaleditor, lineno, filename);
+	else
+		snprintf(buf, len, "\"%s\" %s", fine->externaleditor, filename);
+
+	/* Run the editor.  Whether this succeeds or not, refresh the screen */
+	if (system(buf) != 0) {
+		free(buf);
+		if (fine->refresh_hook)
+			fine->refresh_hook(fine);
+	}
+	free(buf);
+	if (fine->refresh_hook)
+		fine->refresh_hook(fine);
+
+	/* Read the file.  Strip off the last newline. */
+	if (stat(filename, &st))
+		return 1; /* stat failed -- shouldn't happen */
+	len = st.st_size;
+	buf = malloc(len);
+	fp = fopen(filename, "r");
+	if (!fp) {
+		free(buf);
+		return 1; /* couldn't open the file -- shouldn't happen */
+	}
+	if (fread(buf, 1, len, fp) != len) {
+		free(buf);
+		fclose(fp);
+		return 1; /* short read -- shouldn't happen */
+	}
+	fclose(fp);
+	buf[len - 1] = '\0';
+
+	/* Delete the file */
+	unlink(filename);
+
+	/* Adjust the cursor position -- location of first change.  If no
+	 * changes then leave the cursor where it is.
+	 * cursor's original position if no changes.
+	 */
+	for (pos = 0; fine->line[pos]; pos++) {
+		if (fine->line[pos] != buf[pos]) {
+			fine->cursor = pos;
+			break;
+		}
+	}
+
+	/* Use the new version of the line */
+	if (fine->linesize >= len) {
+		strcpy(fine->line, buf);
+		free(buf);
+	} else {
+		free(fine->line);
+		fine->line = buf;
+		fine->linesize = len;
+	}
+
+	return 0;
 }
 
 /* Perform an edit operation at the cursor.  Return 0 if successful, 1 if
@@ -525,6 +631,9 @@ int fineline_edit(fineline_t *fine, fineline_edit_t edit)
 	case FINELINE_RESIZE:	/* the window was resized */
 		return 0;
 
+	case FINELINE_EXTERNAL:	/* invoke an external editor */
+		return external_editor(fine);
+
 	/* These aren't meant to be used */
 	case FINELINE_MIN:
 	case FINELINE_MAX:
@@ -610,7 +719,7 @@ fineline_edit_t fineline_edit_ctrl(fineline_t *fine, wchar_t ch)
 	    FINELINE_BOUNCE,	/* ^B - bounce between history/current line */
 	    FINELINE_COPY,	/* ^C - copy selected text */
 	    FINELINE_QUIT,	/* ^D - no more lines to enter */
-	    FINELINE_MIN,	/* ^E */
+	    FINELINE_EXTERNAL,	/* ^E - invoke an external editor */
 	    FINELINE_SEARCH_F,	/* ^F - prompt for forward search */
 	    FINELINE_SEARCH_G,	/* ^G - go to line or function */
 	    FINELINE_BACK_SPACE,/* ^H - delete character before cursor */
