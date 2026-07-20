@@ -39,32 +39,39 @@ The editing commands are:
 | \<Ctrl-Up> and \<Ctrl-Down> | Move through history. |
 | \<Home> and \<End> | Move to start/end of line, or if already there then move to the start/end of the entire multi-line input. |
 | \<Shift> with any of the above | Select text for cut/copy/paste. |
+| \<Backspace> | Delete the character before the cursor, and move left. |
+| \<Delete> | Delete the character at the cursor. | 
+| \<Enter> | Submit the line, or insert a newline. |
+| \<Insert> | Toggle between insert and replace modes. |
+| \<PgUp> and \<PgDn> | Scroll within a large mult-line inputs. |
+| \<Shift-Tab> | Delete whitespace to previous tabstop. |
+| \<Tab> | Perform name completion, or indent to next tabstop. |
+| \<Esc> | Save the line in history but don't process it. |
 | \<Ctrl-A> | Select all text |
-| \<Ctrl-X> | Copy the selected text to the paste buffer, and delete it. |
+| \<Ctrl-B> | Bounce between a history line and the new input line. |
 | \<Ctrl-C> | Copy the selected text to the paste buffer but don't delete it. |
-| \<Ctrl-V> | Paste the text.  If other text is selected, swap them. |
-| \<Ctrl-Z> | Undo. |
-| \<Ctrl-Y> | Redo. |
+| \<Ctrl-D> | Exit (not for file editor) |
+| \<Ctrl-E> | Invoke an external editor on the input. |
 | \<Ctrl-F> | Find forward.  Prompts for text to search for within edit buffer. |
-| \<Ctrl-F> | Find backward.  Prompts for text to search for within edit buffer. |
+| \<Ctrl-G> | Goto a given line number or symbol definition. |
+| \<Ctrl-I> | (same as \<Tab>) |
+| \<Ctrl-J> | (same as \<Enter>) |
+| \<Ctrl-K> | Configure fineline's options. |
+| \<Ctrl-L> | Redraw the line from scratch. |
+| \<Ctrl-M> | (same as \<Enter>) |
 | \<Ctrl-N> | Find next. Repeats previous search in forward direction. |
 | \<Ctrl-P> | Find previous. Repeats previous search in backward direction. |
-| \<Ctrl-B> | Bounce between a history line and the new input line. |
-| \<Ctrl-L> | Redraw the line from scratch. |
-| \<Tab> | Perform name completion, or indent to next tabstop. |
-| \<Shift-Tab> | Delete whitespace to previous tabstop. |
-| \<Insert> | Toggle between insert and replace modes. |
-| \<Delete> | Delete the character at the cursor. | 
-| \<Backspace> | Delete the character before the cursor, and move left. |
-| \<Ctrl-W> | Delete the previous word. |
-| \<Ctrl-U> | Delete to the start of the line, or start of multi-line input. |
-| \<Ctrl-\> | Insert the next keystroke as text, even if it's a command key |
-| \<Ctrl-E> | Force AI chat to end its current response. |
-| \<PgUp> and \<PgDn> | Scroll within a large mult-line inputs. |
-| \<Enter> | Submit the line, or insert a newline. |
-| \<Ctrl-D> | Exit (not for file editor) |
-| \<Ctrl-S> | Save the input, then quit (for file editor) |
 | \<Ctrl-Q> | Quit without saving (for file editor) |
+| \<Ctrl-R> | Find backward.  Prompts for text to search for within edit buffer. |
+| \<Ctrl-S> | Save the input, then quit (for file editor) |
+| \<Ctrl-U> | Delete to the start of the line, or start of multi-line input. |
+| \<Ctrl-V> | Paste the text.  If other text is selected, swap them. |
+| \<Ctrl-W> | Delete the previous word. |
+| \<Ctrl-X> | Copy the selected text to the paste buffer, and delete it. |
+| \<Ctrl-Y> | Redo. |
+| \<Ctrl-Z> | Undo. |
+| \<Ctrl-[> | (same as \<Esc>) |
+| \<Ctrl-\> | Insert the next keystroke as text, even if it's a command key |
 
 In practice, this feels normal:
 You type in a command line, hit \<Enter>, and the command is processed/executed.
@@ -105,3 +112,4 @@ The syntax coloring function is also responsible for determining whether an
 multi-line entry.
 (In my JSON project, syntax coloring and hinting are implemented in the "line"
 plugin, and A.I. chat is implemented in the "ai" plugin.)
+
