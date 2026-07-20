@@ -87,15 +87,37 @@ typedef struct {
 	int	cursorcol;	/* column containing the cursor */
 } fineline_image_t;
 
+
+/* These store user-configurable options.  Each session gets its own copy of
+ * these, and there's also a global variable that's used to initialize most
+ * of them.
+ */
+typedef struct {
+	int	window;		/* Integer: Max rows to show, 0=unlimited */
+	int	matchparen;	/* Boolean: Highlight unmatched parenthesis? */
+	int	autoindent;	/* Boolean: Add whitespace after a newline? */
+	int	tabstop;	/* Integer: width of tabstops (normally 4) */
+	int	tabspaces;	/* Boolean: Insert spaces for <Tab> (else actual tab) */
+	int	color;		/* Boolean: Enable syntax coloring? */
+	int	hint;		/* Boolean: Enable hinting? */
+	int	undosize;	/* Integer: number of undo levels to track */
+	int	historysize;	/* Integer: number of history lines to track */
+	int	historycurb;	/* Integer: mSec to wait before <Up> moves to history */
+	char	*externaleditor;/* String: Program to invoke for ^E */
+	char	*externalsuffix;/* String: filename extension to use for temp file */
+	int	externalplus;	/* Boolean: Use "+line" to move cursor to a given line? */
+} fineline_config_t;
+
 /* This contains all of the info needed to draw the current line. */
 typedef struct fineline_s {
+	/* These aren't directly used by the fineline library.  Your application
+	 * can use them for any purpose.
+	 */
 	void	*context;	/* Info to help with name completion */
 	void	*window;	/* Info to help draw text */
 
-	/* Options controlling the behavior or appearance */
-	int	dynamic;	/* Boolean: Return a strdup() of the line? */
-	int	matchparen;	/* Boolean: Highlight unmatched parenthesis? */
-	int	tabstop;	/* Integer: width of tabstops (normally 4) */
+	/* This stores the user-configurable options */
+	fineline_config_t config;
 
 	/* Values describing the terminal size, in single-width characters */
 	int	columns, rows, usedrows;
@@ -135,7 +157,9 @@ typedef struct fineline_s {
 	/* This is a callback, invoked when a complete line has been entered.
 	 * This "line" may contain newline characters, for multiline commands.
 	 * If this function is NULL, or if it exists but returns a non-zero
-	 * value, then the fineline_
+	 * value, then the fineline_tty() and fineline_curses() functions
+	 * return a dynamically-allocated copy of the entry, which the calling
+	 * function is responsible for freeing.
 	 */
 	int	(*runner)(const char *line);
 
@@ -151,9 +175,6 @@ typedef struct fineline_s {
 	int (*edit_hook)(struct fineline_s *, fineline_edit_t edit);
 	int (*edit_text_hook)(struct fineline_s *, const char *text, size_t len);
 	/* These are mostly related to the external editor */
-	char	*externaleditor;/* Program to invoke for ^E */
-	char	*editorsuffix;	/* filename extension to use for temp file */
-	int	editorplusline;	/* Use "+line" to move cursor to a given line */
 	void	(*refresh_hook)(struct fineline_s *fine); /* called after editor exits */
 
 	/* Hooks that allow cut/paste between applications */
@@ -254,6 +275,12 @@ void fineline_before_paste(void (*fn)(void));
 void fineline_copy(const char *text, size_t len);
 size_t fineline_paste_size(void);
 const char *fineline_paste(void);
+
+/* config.c */
+void fineline_config_copy(fineline_t *fine, fineline_config_t *config);
+void fineline_config_free(fineline_t *fine);
+const char *fineline_config_set(fineline_config_t *config, const char *str, size_t len);
+const char *fineline_config_name(const char *prevname, int delta);
 
 /******************************************************************************/
 /* ncursesw support.  This is implemented in the header to avoid making the   */

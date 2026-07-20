@@ -10,15 +10,14 @@ fineline_t *fineline_alloc()
 
 	/* Initialize it */
 	memset(fine, 0, sizeof *fine);
-	fine->dynamic = 0; /* just return history[0] every time */
-	fine->matchparen = 1;
-	fine->tabstop = 4;
+
+	/* Use the default config */
+	fineline_config_copy(fine, NULL);
+
+	/* Other settings */
 	fine->columns = 80; /* These are likely to be overridden */
 	fine->rows = 24;
 	fine->selection = -1;
-
-	/* Assume the external editor will support "+line" */
-	fine->editorplusline = 1;
 
 	/* History size must be at least 1 */
 	fine->historysize = 1;
@@ -65,6 +64,9 @@ void fineline_free(fineline_t *fine)
 			free(fine->complete[i]);
 		free(fine->complete);
 	}
+
+	/* Free any memory used for storing the user's configuration */
+	fineline_config_free(fine);
 
 	/* FINALLY we can free the fineline_t itself */
 	free(fine);

@@ -331,7 +331,7 @@ DUMP
 			add_line_prompt(img, promptwidth, promptspace, ++lineno);
 		} else if (wc == '\t') {
 			/* Tabs are converted into a variable number of spaces */
-			add_spaces(img, fine->tabstop - img->virtualcol % fine->tabstop, NULL);
+			add_spaces(img, fine->config.tabstop - img->virtualcol % fine->config.tabstop, NULL);
 		} else if (wc < ' ' || wc == 0x7f) {
 			/* ASCII control characters show as uppercase ^X */
 			strcpy(tmpstr, "^");

@@ -1,7 +1,7 @@
 LIB=	../../lib
 INCLUDE=../../include
-SRC=	char.c draw.c edit.c .c fineline.c history.c image.c paste.c tty.c
-OBJ=	char.o draw.o edit.o fineline.o history.o image.o paste.o tty.o
+SRC=	char.c config.c draw.c edit.c .c fineline.c history.c image.c paste.c tty.c
+OBJ=	char.o config.o draw.o edit.o fineline.o history.o image.o paste.o tty.o
 CC=	gcc -g -fpic
 CFLAGS=	-Wall -I$(INCLUDE)
 

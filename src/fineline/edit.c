@@ -63,19 +63,15 @@ static int external_editor(fineline_t *fine)
 	struct stat st;
 
 	/* If not set, then try looking at $VISUAL or $EDITOR */
-	if (!fine->externaleditor)
-		fine->externaleditor = getenv("VISUAL");
-	if (!fine->externaleditor)
-		fine->externaleditor = getenv("EDITOR");
-	if (!fine->externaleditor)
+	if (!*fine->config.externaleditor)
 		return 1; /* No editor */
 
 	/* Create a temporary file to store the line.  We don't use mkstemp()
 	 * because we want to control the filename extension so the editor can
 	 * hopefully apply the correct syntax highlighting.
 	 */
-	if (fine->editorsuffix)
-		snprintf(filename, sizeof filename, "fineline%lx.%s", (long)fine, fine->editorsuffix);
+	if (fine->config.externalsuffix && *fine->config.externalsuffix)
+		snprintf(filename, sizeof filename, "fineline%lx.%s", (long)fine, fine->config.externalsuffix);
 	else
 		snprintf(filename, sizeof filename, "fineline%lx", (long)fine);
 	fp = fopen(filename, "w");
@@ -91,12 +87,12 @@ static int external_editor(fineline_t *fine)
 			lineno++;
 
 	/* Build a command line to run the editor */
-	len = strlen(fine->externaleditor) + strlen(filename) + 20;
+	len = strlen(fine->config.externaleditor) + strlen(filename) + 20;
 	buf = malloc(len);
-	if (fine->editorplusline)
-		snprintf(buf, len, "\"%s\" +%d %s", fine->externaleditor, lineno, filename);
+	if (fine->config.externalplus)
+		snprintf(buf, len, "\"%s\" +%d %s", fine->config.externaleditor, lineno, filename);
 	else
-		snprintf(buf, len, "\"%s\" %s", fine->externaleditor, filename);
+		snprintf(buf, len, "\"%s\" %s", fine->config.externaleditor, filename);
 
 	/* Run the editor.  Whether this succeeds or not, refresh the screen */
 	if (system(buf) != 0) {
@@ -341,14 +337,14 @@ int fineline_edit(fineline_t *fine, fineline_edit_t edit)
 		/* Delete spaces to previous tabstop */
 
 		/* Find the desired column */
-		col = fineline_char_column_number(fine->line, fine->cursor, fine->tabstop);
-		if (col > 0 && col % fine->tabstop == 0)
-			col -= fine->tabstop;
+		col = fineline_char_column_number(fine->line, fine->cursor, fine->config.tabstop);
+		if (col > 0 && col % fine->config.tabstop == 0)
+			col -= fine->config.tabstop;
 		else
-			col -= col % fine->tabstop;
+			col -= col % fine->config.tabstop;
 
 		/* Find the character at that column */
-		moved = fineline_char_at_column(fine->line, col, NULL, fine->tabstop);
+		moved = fineline_char_at_column(fine->line, col, NULL, fine->config.tabstop);
 
 		/* We want to delete whitespace characters between the moved
 		 * position and the cursor, but if there are non-whitespace
@@ -375,11 +371,11 @@ int fineline_edit(fineline_t *fine, fineline_edit_t edit)
 
 	case FINELINE_TAB:	
 		/* Insert spaces to next tabstop */
-		col = fineline_char_column_number(fine->line, fine->cursor, fine->tabstop);
+		col = fineline_char_column_number(fine->line, fine->cursor, fine->config.tabstop);
 		do {
 			fineline_edit_char(fine, L' ');
 			col++;
-		} while (col % fine->tabstop != 0);
+		} while (col % fine->config.tabstop != 0);
 		break;
 
 	case FINELINE_HOME:	
@@ -471,8 +467,8 @@ int fineline_edit(fineline_t *fine, fineline_edit_t edit)
 		len = fineline_char_line_offset(fine->line, lnum - 1);
 		if (len || lnum == 1) {
 			/* Yes, just move the cursor */
-			col = fineline_char_column_number(fine->line, fine->cursor, fine->tabstop);
-			fine->cursor = fineline_char_at_column(fine->line + len, col, NULL, fine->tabstop) - fine->line;
+			col = fineline_char_column_number(fine->line, fine->cursor, fine->config.tabstop);
+			fine->cursor = fineline_char_at_column(fine->line + len, col, NULL, fine->config.tabstop) - fine->line;
 		} else {
 			/* Otherwise move back in history */
 			fineline_history_show(fine, 1);
@@ -489,8 +485,8 @@ int fineline_edit(fineline_t *fine, fineline_edit_t edit)
 		len = fineline_char_line_offset(fine->line, lnum + 1);
 		if (len) {
 			/* Yes, just move the cursor */
-			col = fineline_char_column_number(fine->line, fine->cursor, fine->tabstop);
-			fine->cursor = fineline_char_at_column(fine->line + len, col, NULL, fine->tabstop) - fine->line;
+			col = fineline_char_column_number(fine->line, fine->cursor, fine->config.tabstop);
+			fine->cursor = fineline_char_at_column(fine->line + len, col, NULL, fine->config.tabstop) - fine->line;
 		} else {
 			/* Otherwise move forward in history */
 			fineline_history_show(fine, -1);
