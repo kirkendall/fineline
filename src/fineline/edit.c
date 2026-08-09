@@ -195,6 +195,7 @@ int fineline_edit(fineline_t *fine, fineline_edit_t edit)
 		case FINELINE_SEARCH_F:
 		case FINELINE_SEARCH_R:
 		case FINELINE_SEARCH_G:
+		case FINELINE_CONFIG:
 			/* Just terminate the prompt */
 			fine->searchprompt = 0;
 			return 0;
@@ -218,6 +219,10 @@ int fineline_edit(fineline_t *fine, fineline_edit_t edit)
 			switch (fine->searchprompt) {
 			case '>':	edit = FINELINE_NEXT_F;	break;
 			case '<':	edit = FINELINE_NEXT_R;	break;
+			case '=':
+				(void)fineline_config_set(&fine->config, fine->searchbuf);
+				fine->searchprompt = '\0';
+				return 0;
 			case '@':
 				/* If number then jump to numbered line */
 				if (fine->searchbuf[0] >= '1' && fine->searchbuf[0] <= '9') {
@@ -574,6 +579,11 @@ int fineline_edit(fineline_t *fine, fineline_edit_t edit)
 	case FINELINE_REDO:
 		return 1; /* not implemented yet. */
 
+	case FINELINE_CONFIG:
+		*fine->searchbuf = 0;
+		fine->searchprompt = '=';
+		break;
+
 	case FINELINE_SEARCH_G:
 		*fine->searchbuf = 0;
 		fine->searchprompt = '@';
@@ -698,7 +708,14 @@ void fineline_edit_char(fineline_t *fine, wchar_t ch)
 	size_t len;
 
 	/* Convert it to a string */
-	len = wctomb(buf, ch);
+	if (ch == 0) {
+		/* Internally, ^@ is represented as U+0fff */
+		len = 3;
+		buf[0] = 0xef;
+		buf[1] = 0xbf;
+		buf[2] = 0xbf;
+	} else 
+		len = wctomb(buf, ch);
 
 	/* insert it */
 	fineline_edit_text(fine, buf, len);
@@ -721,7 +738,7 @@ fineline_edit_t fineline_edit_ctrl(fineline_t *fine, wchar_t ch)
 	    FINELINE_BACK_SPACE,/* ^H - delete character before cursor */
 	    FINELINE_TAB,	/* ^I - insert spaces to next tabstop */
 	    FINELINE_ENTER,	/* ^J - process line or insert newline */
-	    FINELINE_MIN,	/* ^K */
+	    FINELINE_CONFIG,	/* ^K - prompt for a configuration setting */
 	    FINELINE_REDRAW,	/* ^L - redraw input from scratch */
 	    FINELINE_ENTER,	/* ^M - process line or insert newline */
 	    FINELINE_NEXT_F,	/* ^N - repeat previous search forward */

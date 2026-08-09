@@ -54,6 +54,7 @@ typedef enum {
 	FINELINE_QUOTE,		/* treat next character literally */
 
 	/* The following indicate special conditions */
+	FINELINE_CONFIG,	/* prompt for a config setting */
 	FINELINE_PAGE_DOWN,	/* scroll forward */
 	FINELINE_PAGE_UP,	/* scroll back */
 	FINELINE_ENTER,		/* Process the line or add newline */
@@ -279,7 +280,8 @@ const char *fineline_paste(void);
 /* config.c */
 void fineline_config_copy(fineline_t *fine, fineline_config_t *config);
 void fineline_config_free(fineline_t *fine);
-const char *fineline_config_set(fineline_config_t *config, const char *str, size_t len);
+const char *fineline_config_set(fineline_config_t *config, const char *str);
+const char *fineline_config_get(fineline_config_t *config);
 const char *fineline_config_name(const char *prevname, int delta);
 
 /******************************************************************************/

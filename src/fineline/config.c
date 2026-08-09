@@ -1,4 +1,5 @@
 #include <string.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <wchar.h>
 #include "fineline.h"
@@ -109,7 +110,7 @@ void fineline_config_free(fineline_t *fine)
  * NULL then use the defaults.  If len is 0, then use strlen() as the length.
  * Returns NULL normally or a static string if error.
 */
-const char *fineline_config_set(fineline_config_t *config, const char *str, size_t len)
+static const char *config_set_single(fineline_config_t *config, const char *str, size_t len)
 {
 	char	*equals, **valptr;
 	int	i, n;
@@ -168,6 +169,75 @@ const char *fineline_config_set(fineline_config_t *config, const char *str, size
 	return NULL;
 }
 
+/* Set multiple config settings.  If "config" is NULL then adjust the default
+ * settings used for new fineline_t's.  "str" is a series of name=value
+ * substrings, delimited by spaces or commas.  Returns NULL on success or
+ * an error message on error.
+ */
+const char *fineline_config_set(fineline_config_t *config, const char *str)
+{
+	size_t	len;
+	const char *error;
+
+	for (;;) {
+		/* Skip spaces and commas */
+		while (*str == ' ' || *str == ',')
+			str++;
+
+		/* If end of string or end of line, stop */
+		if (*str < ' ')
+			break;
+
+		/* Count the length of this setting */
+		for (len = 0; str[len] > ' '; len++) {
+		}
+
+		/* Apply this setting */
+		error = config_set_single(config, str, len);
+		if (error)
+			return error;
+	}
+
+	/* All done, no errors encountered */
+	return NULL;
+}
+
+/* Return the settings as a comma-delimited string of name=value setting */
+const char *fineline_config_get(fineline_config_t *config)
+{
+	static char buf[200];
+	int	i;
+	size_t	buflen, len;
+
+	/* If "config" is NULL, use defaults */
+	if (!config)
+		config = &defaults;
+
+	/* For each setting... */
+	for (buflen = 0, i = 0; lookup[i].name; i++) {
+		/* Defend against buffer overflow */
+		len = strlen(lookup[i].name) + 2;
+		switch (lookup[i].typec) {
+		case 'b': len += 5; break;
+		case 'n': len += 20; break;
+		default:  len += strlen(*CONFIG_PTR(config, lookup[i].offset, char *));
+		}
+		if (buflen + len > sizeof buf)
+			break;
+
+		/* Append this setting */
+		switch (lookup[i].typec) {
+		case 'b': sprintf(&buf[buflen], "%s=%s,", lookup[i].name, *CONFIG_PTR(config, lookup[i].offset, int) ? "true" : "false");	break;
+		case 'n': sprintf(&buf[buflen], "%s=%d,", lookup[i].name, *CONFIG_PTR(config, lookup[i].offset, int));	break;
+		default: sprintf(&buf[buflen], "%s=%s,", lookup[i].name, *CONFIG_PTR(config, lookup[i].offset, char *));
+		}
+		buflen += len;
+	}
+
+	/* Remove the final comma, and return it */
+	buf[--buflen] = '\0';
+	return buf;
+}
 
 /* This is used to step through the possible names for variables.  It returns
  * the name in a static string, or NULL if there are no more values.  The
