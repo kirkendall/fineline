@@ -5,18 +5,18 @@ It fills the same role as the GNU ReadLine library,
 but it has a more modern feel, and is easier to work with.
 Its biggest features are:
 
-* /Name completion/, similar to ReadLine but easier to implement.
-* /Simple TTY or ncursesw-based full-screen/ API.
+* *Name completion*, similar to ReadLine but easier to implement.
+* *Simple TTY or ncursesw-based full-screen* API.
   This is the main reason I wrote fineline.
-  I needed this ability for my JSON project, and no other ReadLine-like
+  I needed this ability for my "edj" JSON project, and no other ReadLine-like
   library can do it.
-* /Multi-line inputs/. I implemented this mostly so I could use
+* *Multi-line inputs*. I implemented this mostly so I could use
   multi-line examples in my JSON project.
-* /Syntax coloring/ as you type.
-* /Hinting/ - suggestions of what comes next, such as the parameters of a function.
-* /Full UTF-8/ input, including double-wide characters.
+* *Syntax coloring* as you type.
+* *Hinting* - suggestions of what comes next, such as the parameters of a function.
+* *Full UTF-8* input, including double-wide characters.
   (Assuming your terminal supports it, of course.)
-* /Chat/, displays asynchronous text from another source such as AI.
+* *Chat*, displays asynchronous text from another source such as AI.
   Code embedded in the AI's response can be inserted into the input.
 * Uses common editing commands, such as \<Ctrl-V> to paste.  See below.
 
@@ -27,8 +27,7 @@ As with command-line entry, this will only take up as many rows of
 the screen as needed to display the text (the contents of the file).
 "History" doesn't make sense for a file editor, though it does still
 support undo/redo and all of the other editing commands.
-You can also easily implement a similar editor in your own ncursesw-based
-full-screen app.
+You can also easily implement a similar editor in your own app.
 
 The editing commands are:
 | Keys | Action |
@@ -71,7 +70,7 @@ The editing commands are:
 | \<Ctrl-Y> | Redo. |
 | \<Ctrl-Z> | Undo. |
 | \<Ctrl-[> | (same as \<Esc>) |
-| \<Ctrl-\> | Insert the next keystroke as text, even if it's a command key |
+| \<Ctrl-\\> | Insert the next keystroke as text, even if it's a command key |
 
 In practice, this feels normal:
 You type in a command line, hit \<Enter>, and the command is processed/executed.
@@ -110,6 +109,5 @@ hinting, and A.I. chat if you want those features.
 The syntax coloring function is also responsible for determining whether an
 \<Enter> keystroke marks the end of input, or is merely a line break in a
 multi-line entry.
-(In my JSON project, syntax coloring and hinting are implemented in the "line"
-plugin, and A.I. chat is implemented in the "ai" plugin.)
-
+(In my "edj" JSON project, syntax coloring and hinting are implemented in the
+"line" plugin, and A.I. chat is implemented in the "ai" plugin.)
