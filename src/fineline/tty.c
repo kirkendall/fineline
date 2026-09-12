@@ -3,8 +3,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <termios.h>
-#include <locale.h>
 #include <unistd.h>
+#include <locale.h>
 #include <string.h>
 #include <signal.h>
 #include <assert.h>
@@ -56,6 +56,13 @@ static struct {
 	{FINELINE_S_RIGHT,	"\033[1;2C"},	/* select right */
 	{FINELINE_S_UP,		"\033[1;2A"},	/* select up */
 	{FINELINE_S_DOWN,	"\033[1;2B"},	/* select down */
+
+	/* These are <Ctrl-Home> and <Ctrl-End> because gnome-terminal and
+	 * xfce4-terminal have <Shift-Home> and <Shift-End> hardcoded as
+	 * history scrolling keys.
+	 */
+	{FINELINE_S_HOME,	"\033[1;5H"},	/* select to start of line */
+	{FINELINE_S_END,	"\033[1;5F"},	/* select to end of line */
 
 	{FINELINE_BACK_WORD,	"\027"},	/* ^W delete preceding word */
 	{FINELINE_EXIT,		"\004"},	/* ^D exit, only if line is empty */
