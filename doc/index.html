@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Programmer's Guide to the Fineline Library</title>
+    <style>
+      td.chapter {vertical-align:top; font-weight: bold; }
+    </style>
+  </head>
+  <body>
+    <h1>Programmer's Guide to the Fineline Library</h1>
+    This documentation describes how to use the <code>-lfineline</code>
+    library in your program.
+    Each chapter covers a different feature.
+    The features are largely independent of each other, which helps because
+    each chapter can be tightly focused.
+    <p>
+    It is not user documentation.
+    There are no instructions about which keystokes performs what action.
+    See the README.md file for that.
+
+    <h2>Chapters</h2>
+    <table>
+      <tr><td class="chapter"><a href="intro.html">1. Introduction</a></td><td>This begins with an example program, and then proceeds to give a broad overview of the library and its capabilities.</td></tr>
+      <tr><td class="chapter"><a href="history.html">2. History</a></td><td>In-memory history is trivial, but if you want history to persist between sessions then you need to add functions to save it to a file, and reload it later.</td></tr>
+      <tr><td class="chapter"><a href="style.html">3. Display Styles</a></td><td>Here we explain the callbacks used for outputting text to the terminal, and controlling the cursor position.  The ANSI terminal interface is explained in detail.</td></tr>
+      <tr><td class="chapter"><a href="ncursesw.html">4. Full-Screen (ncursesw)</a></td><td>This builds on the previous chapter to show how the callbacks are used in full-screen programs, via the <code>-lncursesw</code> library.</td></tr>
+      <tr><td class="chapter"><a href="syntax.html">5. Syntax Coloring</a></td><td>Yet another callback implements syntax coloring.  Syntax coloring can be complicated because syntax is complicated, but *fineline*'s interface is simple.  It is also responsible for determining whether an &lt;Enter&gt; keystroke should be inserted as part of a multi-line input, or indicate the end of the current input</td></tr>
+      <tr><td class="chapter"><a href="complete.html">6. Name Completion</a></td><td>This explains how name completion is implemented, and how to write your own callback to support it.</td></tr>
+      <tr><td class="chapter"><a href="hinting.html">7. Hinting</a></td><td>Hinting is different from name completion.  Name completion tries to find text that can be inserted into the input, while hinting offers context-sensitive advice such as the parameters of functions.</td></tr>
+      <tr><td class="chapter"><a href="chat.html">8. Chat and AI</a></td><td>This allows asynchronously-received text to be displayed above your input.  It is intended for AI chat, but could work for any asynchronous updates.  You can configure selected parts to be inserted into your input automatically.</td></tr>
+      <tr><td class="chapter"><a href="cutpaste.html">9. Cut and Paste</a></td><td>The cut, copy, and paste commands normally just move text within the fineline library, but you can add callbacks to access your GUI's interprocess cut/paste.</td></tr>
+      <tr><td class="chapter"><a href="file.html">10. File Editor</a></td><td>The <code>fled</code> editor edits files, using the same edit commands as the line input functions.  You can easily implement similar functionality within your own program.</td></tr>
+  </body>
+</html>
