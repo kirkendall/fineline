@@ -217,8 +217,12 @@ int fineline_edit(fineline_t *fine, fineline_edit_t edit)
 		case FINELINE_ENTER:
 			/* Process the entered value */
 			switch (fine->searchprompt) {
-			case '>':	edit = FINELINE_NEXT_F;	break;
-			case '<':	edit = FINELINE_NEXT_R;	break;
+			case '>':
+				edit = FINELINE_NEXT_F;
+				break;
+			case '<':
+				edit = FINELINE_NEXT_R;
+				break;
 			case '=':
 				(void)fineline_config_set(&fine->config, fine->searchbuf);
 				fine->searchprompt = '\0';
@@ -329,7 +333,13 @@ int fineline_edit(fineline_t *fine, fineline_edit_t edit)
 		break;
 
 	case FINELINE_BACK_TAB:
-		/* If the preceding character is a literal tab, just delete it */
+		/* If there's anything at all to delete, and we're on a history
+		 * line, then copy it as the current line before changing it.
+		 */
+		if (fine->cursor > 0)
+			fineline_history_edit(fine);
+
+		/* If the preceding character is a literal tab, just delete it*/
 		if (fine->cursor > 0 && fine->line[fine->cursor - 1] == '\t') {
 			fine->cursor--;
 			if (fine->line[fine->cursor + 1]) {
@@ -376,6 +386,7 @@ int fineline_edit(fineline_t *fine, fineline_edit_t edit)
 
 	case FINELINE_TAB:	
 		/* Insert spaces to next tabstop */
+		fineline_history_edit(fine);
 		col = fineline_char_column_number(fine->line, fine->cursor, fine->config.tabstop);
 		do {
 			fineline_edit_char(fine, L' ');
@@ -562,6 +573,7 @@ int fineline_edit(fineline_t *fine, fineline_edit_t edit)
 
 	case FINELINE_CUT:
 		/* Copy text to the cut buffer, and then delete it. */
+		fineline_history_edit(fine);
 		copypaste(fine, 1, 1, 0);
 		break;
 
@@ -572,6 +584,7 @@ int fineline_edit(fineline_t *fine, fineline_edit_t edit)
 
 	case FINELINE_PASTE:
 		/* Paste text.  If there's a pending selection, delete it first */
+		fineline_history_edit(fine);
 		copypaste(fine, 0, 1, 1);
 		break;
 
