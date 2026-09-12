@@ -1,3 +1,7 @@
+/* fineline.h */
+
+#define FINELINE_VERSION "1.0"
+
 /* These are the cursor keys used by fineline.  They start well beyond the
  * range of Unicode characters.
  */
@@ -283,6 +287,9 @@ void fineline_config_free(fineline_t *fine);
 const char *fineline_config_set(fineline_config_t *config, const char *str);
 const char *fineline_config_get(fineline_config_t *config);
 const char *fineline_config_name(const char *prevname, int delta);
+
+/* mode.c */
+fineline_t *fineline_mode_editor(fineline_t *fine, const char *text, size_t textlen);
 
 /******************************************************************************/
 /* ncursesw support.  This is implemented in the header to avoid making the   */

@@ -21,19 +21,6 @@
 #include <wchar.h>
 #include <fineline.h>
 
-#if 1
-#define DUMP
-#else
-#define DUMP dump(__LINE__, img);
-static void dump(int line, fineline_image_t *img)
-{
-	int	r;
-	fprintf(stderr, "%d:img@0x%lx:{hxw=%dx%d, thisrow/col=%d/%d, rowpos=%d, rowsize=%d, cursor=%dx%d}\r\n", line, (long)img, img->height, img->width, img->thisrow, img->thiscol, img->rowpos, img->rowsize, img->cursorrow, img->cursorcol);
-	for (r = 0; r < img->usedrows - 1; r++)
-		fprintf(stderr, "img->row[%d] = \"%s\"\r\n", r, img->row[r]);
-	fprintf(stderr, "img->row[%d] = \"%.*s\"\r\n\n", r, img->rowpos, img->row[r]);
-}
-#endif
 
 /* Allocate an image */
 static fineline_image_t *alloc_image(fineline_t *fine)
@@ -99,15 +86,15 @@ static void start_new_row(fineline_image_t *img)
 		free(img->row[0]);
 		free(img->style[0]);
 		if (img->height > 1) {
-			memmove(&img->row[0], &img->row[1], (img->rowsize - 1) * sizeof *img->row);
-			memmove(&img->style[0], &img->style[1], (img->rowsize - 1) * sizeof *img->row);
-			memmove(&img->rowwidth[0], &img->rowwidth[1], (img->rowsize - 1) * sizeof *img->rowwidth);
+			memmove(&img->row[0], &img->row[1], (img->height - 1) * sizeof *img->row);
+			memmove(&img->style[0], &img->style[1], (img->height - 1) * sizeof *img->style);
+			memmove(&img->rowwidth[0], &img->rowwidth[1], (img->height - 1) * sizeof *img->rowwidth);
 		}
 		img->row[img->height - 1] = NULL;
 		img->style[img->height - 1] = NULL;
 		img->rowwidth[img->height - 1] = 0;
 		img->toprow++;
-		img->thisrow--;
+		img->thisrow = img->height - 1;
 		if (img->cursorrow >= 0)
 			img->cursorrow--;
 	}
@@ -140,10 +127,10 @@ static void add_char(fineline_image_t *img, wchar_t wc, const char *text, int ch
 		start_new_row(img);
 
 	/* If the row buffer is too small, enlarge it */
-	if (img->rowpos + charSize >= img->rowsize) {
+	if (img->rowpos + charSize + 1 >= img->rowsize) {
 		img->rowsize += 32;
-		img->row[img->thisrow] = realloc(img->row[img->thisrow], img->rowsize * sizeof(*img->row));
-		img->style[img->thisrow] = realloc(img->style[img->thisrow], img->rowsize * sizeof(*img->style));
+		img->row[img->thisrow] = realloc(img->row[img->thisrow], img->rowsize * sizeof(**img->row));
+		img->style[img->thisrow] = realloc(img->style[img->thisrow], img->rowsize * sizeof(**img->style));
 	}
 
 	/* Add the character to the row */
@@ -170,8 +157,8 @@ static void add_spaces(fineline_image_t *img, int nspaces, const char *style)
 
 /* Append multibyte characters to an image.  This is used for text other than
  * the input buffer (e.g., use this for prompt or hint); it does not watch for
- * the cursor position or anything * fancy like that.  All characters are
- * assumed to be printable.
+ * the cursor position or anything fancy like that.  All characters are assumed
+ * to be printable.
  */
 static void add_string(fineline_image_t *img, const char *text, const char *style)
 {
@@ -254,15 +241,6 @@ static void found_cursor(fineline_t *fine, fineline_image_t *img, int plain)
 	/* Show hint text, if any */
 	if (fine->hint && *fine->hint)
 		add_string(img, fine->hint, "hint");
-
-#if 0
-	/* For debugging, show cursor column */
-	{
-		char buf[100];
-		sprintf(buf, "[%d@%d]", img->cursorcol, img->cursorrow);
-		add_string(img, buf, "cursor");
-	}
-#endif
 }
 
 /* This generates an image, basically by splitting the input into rows.
@@ -289,10 +267,10 @@ fineline_image_t *fineline_image(fineline_t *fine, int plain)
 
 	/* Allocate the image_t. */
 	img = alloc_image(fine);
-DUMP
 
 	/* Add the main prompt.  Remember its width, so we can make subsequent
-	 * lines' prompts use the same width.
+	 * lines' prompts use the same width.  We assume the prompt fits on a
+	 * single row (no wrapping).
 	 */
 	if (!fine->prompt || !*fine->prompt) {
 		promptwidth = 0;
@@ -302,7 +280,6 @@ DUMP
 		promptwidth = img->thiscol;
 		promptspace = (fine->prompt[strlen(fine->prompt) - 1] == ' ');
 	}
-DUMP
 
 	/* Add characters from the input buffer, watching for special characters
 	 * such as newlines, tabs, and control characters.  When we hit the
@@ -322,7 +299,6 @@ DUMP
 		/* Is this the cursor position? */
 		if (scan == fine->line + fine->cursor)
 			found_cursor(fine, img, plain);
-DUMP
 
 		/* Add this character.  Some characters are special */
 		if (wc == '\n') {
@@ -330,7 +306,7 @@ DUMP
 			start_new_row(img);
 			add_line_prompt(img, promptwidth, promptspace, ++lineno);
 		} else if (wc == '\t') {
-			/* Tabs are converted into a variable number of spaces */
+			/* Tabs are displayed as a variable number of spaces */
 			add_spaces(img, fine->config.tabstop - img->virtualcol % fine->config.tabstop, NULL);
 		} else if (wc < ' ' || wc == 0x7f) {
 			/* ASCII control characters show as uppercase ^X */
@@ -368,7 +344,6 @@ DUMP
 	 */
 	if (img->cursorrow == -1)
 		found_cursor(fine, img, plain);
-DUMP
 
 	/* Mark the end of the last row with a NUL byte */
 	if (img->row[img->thisrow]) {
@@ -378,6 +353,5 @@ DUMP
 
 	/* The number of rows is 1 more than the current row */
 	img->usedrows = img->thisrow + 1;
-DUMP
 	return img;
 }

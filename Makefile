@@ -11,7 +11,7 @@ libs:
 fled:
 	cd src/fled; make
 
-tryfl: tryfl.c libs
+tryfl: tryfl.c $(INCLUDE)/fineline.h $(LIB)/libfineline.so
 	$(CC) $(CFLAGS) tryfl.c -L$(LIB) -lfineline -o tryfl
 
 try: tryfl
