@@ -65,7 +65,7 @@ static struct {
 	{FINELINE_S_END,	"\033[1;5F"},	/* select to end of line */
 
 	{FINELINE_BACK_WORD,	"\027"},	/* ^W delete preceding word */
-	{FINELINE_EXIT,		"\004"},	/* ^D exit, only if line is empty */
+	{FINELINE_EOT,		"\004"},	/* ^D exit, only if line is empty */
 	{FINELINE_SAVE,		"\013"},	/* ^S Save to history but don't process */
 	{FINELINE_QUIT,		"\011"}		/* ^Q exit without processing the line */
 };

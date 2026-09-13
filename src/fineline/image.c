@@ -244,12 +244,17 @@ static void found_cursor(fineline_t *fine, fineline_image_t *img, int plain)
 }
 
 /* This generates an image, basically by splitting the input into rows.
- * Most importantly, it converts fine->line and fine->style into a
- * fineline_image_t's ->row  and->style arrays.  Those arrays are indexed
- * by row; their elements are indexed by bytes of UTF-8 text.  So
+ * Most importantly, it converts fine->line and fine->style (the current input)
+ * into a fineline_image_t's ->row  and->style arrays.  Those arrays are
+ * indexed by row; their elements are indexed by bytes of UTF-8 text.  So
  * ->row[rownum][bytenum] is a byte of a UTF-8 character, and
  * ->style[rownum][bytenum] is a string identifying the color and other
  * attributes of the character.  
+ *
+ * The "plain" parameter is used to inhibit features such as hints.  It is
+ * used when doing a final redraw of the image before submitting it to be
+ * processed by the application, so the user can see exactly what they just
+ * entered.
  */
 fineline_image_t *fineline_image(fineline_t *fine, int plain)
 {
@@ -285,10 +290,15 @@ fineline_image_t *fineline_image(fineline_t *fine, int plain)
 	 * such as newlines, tabs, and control characters.  When we hit the
 	 * cursor position, remember its row and column and also maybe display
 	 * hints or partial completions.
+	 *
+	 * Rendering of rows continues until we've found the cursor and either
+	 * filled the viewport or hit the end of input.  Also, try to make the
+	 * current image's toprow match the previous image's toprow, so we
+	 * don't scroll any more than we have to.
 	 */
 	memset(&state, 0, sizeof state);
 	for (scan = fine->line, style = fine->style;
-	     img->thisrow - img->toprow < img->height || img->cursorrow == -1;
+	     img->cursorrow == -1 || (fine->image && fine->image->toprow > img->toprow && img->cursorrow > 0) || img->usedrows < img->height;
 	     scan += len) {
 
 		/* Get the character */

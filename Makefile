@@ -18,6 +18,9 @@ try: tryfl
 	clear
 	LD_LIBRARY_PATH=$(LIB) ./tryfl || (stty sane; [ -f core ] && LD_LIBRARY_PATH=$(LIB) gdb tryfl core)
 
+tryed: fled
+	LD_LIBRARY_PATH=$(LIB) bin/fled testfile || (stty sane; [ -f core ] && LD_LIBRARY_PATH=$(LIB) gdb bin/fled core)
+
 gdb: tryfl
 	LD_LIBRARY_PATH=$(LIB) gdb tryfl
 

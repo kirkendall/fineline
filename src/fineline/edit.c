@@ -149,9 +149,13 @@ static int external_editor(fineline_t *fine)
 	return 0;
 }
 
-/* Perform an edit operation at the cursor.  Return 0 if successful, 1 if
- * a complete line is ready to process, or -1 if error.  An error typically
- * means you've bumped into the edge of the line being edited.
+/* Perform an edit operation at the cursor.
+ * 
+ * Return 0 if successful, and ready for next edit.
+ * Return 1 if a complete line is ready to process,
+ * Return 2 if to quit (^D for line input, ^Q when editing a file)
+ * Return -1 if error.  An error typically means you've bumped into the edge
+ * of the line being edited.
  */
 int fineline_edit(fineline_t *fine, fineline_edit_t edit)
 {
@@ -561,7 +565,7 @@ int fineline_edit(fineline_t *fine, fineline_edit_t edit)
 		fine->cursor = 0;
 		break;
 
-	case FINELINE_EXIT:
+	case FINELINE_EOT:
 		/* Fail if line is not empty */
 		if (*fine->line)
 			return -1;
@@ -744,7 +748,7 @@ fineline_edit_t fineline_edit_ctrl(fineline_t *fine, wchar_t ch)
 	    FINELINE_S_ALL,	/* ^A - select all text */
 	    FINELINE_BOUNCE,	/* ^B - bounce between history/current line */
 	    FINELINE_COPY,	/* ^C - copy selected text */
-	    FINELINE_QUIT,	/* ^D - no more lines to enter */
+	    FINELINE_EOT,	/* ^D - no more lines to enter */
 	    FINELINE_EXTERNAL,	/* ^E - invoke an external editor */
 	    FINELINE_SEARCH_F,	/* ^F - prompt for forward search */
 	    FINELINE_SEARCH_G,	/* ^G - go to line or function */
@@ -757,7 +761,7 @@ fineline_edit_t fineline_edit_ctrl(fineline_t *fine, wchar_t ch)
 	    FINELINE_NEXT_F,	/* ^N - repeat previous search forward */
 	    FINELINE_MIN,	/* ^O */
 	    FINELINE_NEXT_R,	/* ^P - repeat previous search backward */
-	    FINELINE_EXIT,	/* ^Q - exit file editor without saving */
+	    FINELINE_QUIT,	/* ^Q - exit file editor without saving */
 	    FINELINE_SEARCH_R,	/* ^R - prompt for reverse search */
 	    FINELINE_SAVE,	/* ^S - save file and exit file editor */
 	    FINELINE_MIN,	/* ^T */
