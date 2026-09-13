@@ -58,7 +58,7 @@ int main(int argc, char **argv)
 	textout = fineline_tty(editor, "  1|");
 
 	/* Maybe save it */
-	if (strcmp(textin, textout)) {
+	if (textout && strcmp(textin, textout)) {
 		fd = open(argv[1], O_WRONLY);
 		if (fd < 0) {
 			perror(argv[1]);
