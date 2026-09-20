@@ -163,7 +163,7 @@ typedef struct fineline_s {
 	fineline_config_t config;
 
 	/* Values describing the terminal size, in single-width characters */
-	int	columns, rows, usedrows;
+	int	columns, rows, usedrows, maxrows;
 
 	/* Status of keystroke input */
 	int	quote;	/* treat next char as literal, even if <Esc> */
@@ -219,10 +219,6 @@ typedef struct fineline_s {
 	int (*edit_text_hook)(struct fineline_s *, const char *text, size_t len);
 	/* These are mostly related to the external editor */
 	void	(*refresh_hook)(struct fineline_s *fine); /* called after editor exits */
-
-	/* Hooks that allow cut/paste between applications */
-	void (*postcopy_hook)(const char *text, size_t len);
-	const char *(*prepaste_hook)(void);
 
 	/* Hooks that allow language-specific features */
 	int (*goto_hook)(struct fineline_s *fine);
@@ -313,8 +309,8 @@ fineline_image_t *fineline_image(fineline_t *fine, int plain);
 void fineline_image_free(fineline_image_t *img);
 
 /* paste.c */
-void fineline_after_copy(void (*fn)(void));
-void fineline_before_paste(void (*fn)(void));
+void fineline_paste_hook(void (*copyfn)(const char *txt), char *(*pastefn)(void));
+void fineline_paste_cmds(const char *copycmd, const char *pastecmd);
 void fineline_copy(const char *text, size_t len);
 size_t fineline_paste_size(void);
 const char *fineline_paste(void);

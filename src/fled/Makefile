@@ -3,6 +3,7 @@ LIB=	../../lib
 BIN=	../../bin
 CFLAGS=	-I$(INCLUDE)
 LDFLAGS=-L$(LIB)
+CC=	gcc -Wall -fpic -g
 
 all: $(BIN)/fled
 

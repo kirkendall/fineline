@@ -343,7 +343,7 @@ static void ttytext(fineline_t *fine, const char *style, const char *text, size_
 		strcpy(esc = buf, "\033[33;1m");
 	if (style && (!strcmp(style, "hint") || !strcmp(style, "complete")))
 		strcpy(esc = buf, "\033[2m");
-	if (style && !strcmp(style, "selection"))
+	if (style && !strcmp(style, "select"))
 		strcpy(esc = buf, "\033[44m");
 	if (style && !strcmp(style, "search"))
 		strcpy(esc = buf, "\033[35;1m");

@@ -6,7 +6,7 @@ but it has a more modern feel, and is easier to work with.
 Its biggest features are:
 
 * **Name completion**, similar to ReadLine but easier to implement.
-* **Simple TTY or ncursesw-based full-screen** API.
+* **Simple TTY or ncursesw-based full-screen** app.
   This is the main reason I wrote fineline.
   I needed this ability for my "edj" JSON project, and no other ReadLine-like
   library can do it.
@@ -63,7 +63,7 @@ The editing commands are:
 | \<Ctrl-O> | (reserved for overlapping window commands) |
 | \<Ctrl-P> | Find previous. Repeats previous search in backward direction. |
 | \<Ctrl-Q> | Quit without saving (for file editor) |
-| \<Ctrl-R> | Find backward.  Prompts to search for within edit buffer or history. |
+| \<Ctrl-R> | Find backward.  Prompts for text to search for within edit buffer or history. |
 | \<Ctrl-S> | Save the input, then quit (for file editor) |
 | \<Ctrl-T> | (reserved for tiling window commands) |
 | \<Ctrl-U> | Delete to the start of the line, or start of multi-line input. |

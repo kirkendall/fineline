@@ -21,22 +21,22 @@ static size_t bufused;	/* Number of bytes used in the buffer */
 /* These configure the library to access the GUI's cut buffer */
 static int didcopypaste = 1;	/* so first copy/paste can auto-detect */
 static const char *aftercopycmd, *beforepastecmd;
-static void (*aftercopy)(void);
-static void (*beforepaste)(void);
+static void (*aftercopy)(const char *txt);
+static char *(*beforepaste)(void);
 
 
 /* Run a program to send copied text to the GUI via xclip */
-static void runcopy(void)
+static void runcopy(const char *text)
 {
 	FILE *fp = popen(aftercopycmd, "w");
 	if (fp) {
-		fwrite(buffer, sizeof(char), bufused, fp);
+		fwrite(text, sizeof(char), strlen(text), fp);
 		pclose(fp);
 	}
 }
 
 /* Run a program to fetch text to paste from the GUI via xclip */
-static void runpaste(void)
+static char *runpaste(void)
 {
 	size_t	sofar;
 	ssize_t	more;
@@ -71,12 +71,20 @@ static void runpaste(void)
 		}
 	}
 
-	/* Clean up */
+	/* Return the data, if any */
+	if (*guibuf)
+		return guibuf;
 	free(guibuf);
+	return NULL;
 }
 
-/* Configure function to call after copying and before pasting */
-void fineline_paste_hook(void (*copyfn)(void), void(*pastefn)(void))
+/* Configure function to call after copying and before pasting. The copyfn
+ * will be passed a NUL-terminated string containing the cut/copied text.
+ * The pastefn should return NULL if no copied text is available from the
+ * GUI, or a dynamically-allocated NUL-terminated string containing the copied
+ * text.  The string will be freed automatically.
+ */
+void fineline_paste_hook(void (*copyfn)(const char *txt), char *(*pastefn)(void))
 {
 	aftercopy = copyfn;
 	beforepaste = pastefn;
@@ -127,28 +135,46 @@ void fineline_copy(const char *text, size_t len)
 		return;
 
 	/* Expand the buffer if necessary */
-	if (len > bufsize) {
-		bufsize = len;
+	if (len + 1 > bufsize) {
+		bufsize = len + 1;
 		buffer = realloc(buffer, bufsize);
 	}
 
 	/* Copy the text */
 	memcpy(buffer, text, len);
 	bufused = len;
+	buffer[bufused] = '\0';
 
 	/* Call the aftercopy function, if any */
 	guessgui();
 	if (aftercopy)
-		aftercopy();
+		aftercopy(buffer);
 }
 
 /* Return the size of the cut/paste text */
 size_t fineline_paste_size(void)
 {
+	char *guitxt;
+	size_t	guilen;
+
 	/* Allow the GUI to adjust the buffer */
 	guessgui();
-	if (beforepaste)
-		beforepaste();
+	if (beforepaste) {
+		guitxt = beforepaste();
+		if (guitxt && *guitxt) {
+			guilen = strlen(guitxt);
+			if (guilen + 1 > bufsize) {
+				bufsize = guilen + 1;
+				buffer = realloc(buffer, bufsize);
+			}
+			memcpy(buffer, guitxt, guilen);
+			buffer[guilen] = '\0';
+			bufused = guilen;
+		}
+		if (guitxt)
+			free(guitxt);
+	}
+
 	return bufused;
 }
 

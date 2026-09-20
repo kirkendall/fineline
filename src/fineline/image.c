@@ -21,6 +21,26 @@
 #include <wchar.h>
 #include <fineline.h>
 
+#define DEBUG_IMAGE
+
+#ifdef DEBUG_IMAGE
+#include <stdarg.h>
+static void imglog(const char *fmt, ...)
+{
+	static FILE *fp = NULL;
+	va_list ap;
+	if (!fp)
+		fp = fopen("img.log", "w");
+	va_start(ap, fmt);
+	vfprintf(fp, fmt, ap);
+	va_end(ap);
+	fflush(fp);
+}
+#else
+# define imglog(...)
+#endif
+
+
 
 /* Allocate an image */
 static fineline_image_t *alloc_image(fineline_t *fine)
@@ -31,16 +51,12 @@ static fineline_image_t *alloc_image(fineline_t *fine)
 	 * the screen, since that's the maximum we'll ever display
 	 */
 	img = malloc(sizeof *img);
+	memset(img, 0, sizeof *img);
 	img->height = fine->rows;
 	img->width = fine->columns;
 	img->row = calloc(img->height, sizeof *img->row);
 	img->style = calloc(img->height, sizeof *img->style);
 	img->rowwidth = calloc(img->height, sizeof *img->rowwidth);
-	img->toprow = 0;
-	img->thisrow = 0;
-	img->rowsize = 0;
-	img->thiscol = 0;
-	img->rowpos = 0;
 	img->cursorrow = img->cursorcol = -1;
 
 	return img;
@@ -72,6 +88,7 @@ void fineline_image_free(fineline_image_t *img)
 /* Start a new row.  If the row table is full, then scroll it. */
 static void start_new_row(fineline_image_t *img)
 {
+imglog("start_new_row(), img->cursorrow=%d, img->usedrows=%d, img->toprow=%d\n", img->cursorrow, img->usedrows, img->toprow);
 	/* Mark the end of the row's text with a NUL byte */
 	img->row[img->thisrow][img->rowpos] = '\0';
 
@@ -82,7 +99,11 @@ static void start_new_row(fineline_image_t *img)
 	 * need to scroll.
 	 */
 	img->thisrow++;
-	if (img->thisrow >= img->height) {
+	if (img->thisrow < img->height) {
+		/* Plenty of room, just use the next row */
+		img->usedrows = img->thisrow;
+	} else {
+		/* Viewport is full, need to scroll */
 		free(img->row[0]);
 		free(img->style[0]);
 		if (img->height > 1) {
@@ -95,7 +116,7 @@ static void start_new_row(fineline_image_t *img)
 		img->rowwidth[img->height - 1] = 0;
 		img->toprow++;
 		img->thisrow = img->height - 1;
-		if (img->cursorrow >= 0)
+		if (img->cursorrow > 0)
 			img->cursorrow--;
 	}
 	img->rowsize = 0;
@@ -296,9 +317,17 @@ fineline_image_t *fineline_image(fineline_t *fine, int plain)
 	 * current image's toprow match the previous image's toprow, so we
 	 * don't scroll any more than we have to.
 	 */
+if (fine->image)
+imglog("\ncursor on line %d, img->height=%d, fine->image->toprow=%d\n", fineline_char_line_number(fine->line, fine->cursor), img->toprow, fine->image->toprow);
+else
+imglog("\ncursor on line %d, no previous image\n", fineline_char_line_number(fine->line, fine->cursor));
+
 	memset(&state, 0, sizeof state);
 	for (scan = fine->line, style = fine->style;
-	     img->cursorrow == -1 || (fine->image && fine->image->toprow > img->toprow && img->cursorrow > 0) || img->usedrows < img->height;
+	     img->cursorrow == -1 /* we haven't found the cursor yet */
+		|| (fine->image && fine->image->toprow > img->toprow && img->cursorrow > 0) /* we haven't scrolled to the previous image's position yet */
+		|| (!fine->image && img->cursorrow > img->height / 2) /* no previous image, we want to center the cursor's row */
+		|| img->usedrows < img->height - 1; /* the viewport isn't full */
 	     scan += len) {
 
 		/* Get the character */

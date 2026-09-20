@@ -72,7 +72,7 @@ void fineline_draw(fineline_t *fine, int plain)
 			last = fine->cursor + 1;
 		}
 		for (; i < last; i++)
-			fine->style[i] = "selection";
+			fine->style[i] = "select";
 	}
 
 	/* Generate a new image */

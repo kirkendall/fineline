@@ -243,6 +243,18 @@ int fineline_edit(fineline_t *fine, fineline_edit_t edit)
 					return 0;
 				}
 
+				/* If $ then jump to the last line */
+				if (!strcmp(fine->searchbuf, "$")) {
+					len = strlen(fine->line);
+					if (len > 0 && fine->line[-1] == '\n')
+						len--;
+					tmp = fineline_char_line_number(fine->line, len);
+					start = fineline_char_line_offset(fine->line, tmp);
+					fine->cursor = start;
+					fine->searchprompt = 0;
+					return 0;
+				}
+
 				/* If no "goto" hook, then find first instance
 				 * of the entered text.  Hopefully this is a
 				 * function definition.
@@ -261,6 +273,7 @@ int fineline_edit(fineline_t *fine, fineline_edit_t edit)
 					}
 					return 1; /* error - not found */
 				}
+				/* else fall through to maybe use goto_hook */
 			default:
 				/* If we get here, either we're doing a weird
 				 * application-specific prompt, or language-
@@ -485,11 +498,11 @@ int fineline_edit(fineline_t *fine, fineline_edit_t edit)
 		/* First try moving up in the edit buffer */
 		lnum = fineline_char_line_number(fine->line, fine->cursor);
 		len = fineline_char_line_offset(fine->line, lnum - 1);
-		if (len || lnum == 1) {
+		if (len || lnum >= 1) {
 			/* Yes, just move the cursor */
 			col = fineline_char_column_number(fine->line, fine->cursor, fine->config.tabstop);
 			fine->cursor = fineline_char_at_column(fine->line + len, col, NULL, fine->config.tabstop) - fine->line;
-		} else {
+		} else if (fine->historysize) {
 			/* Otherwise move back in history */
 			fineline_history_show(fine, 1);
 			fine->cursor = strlen(fine->line);
@@ -687,7 +700,8 @@ void fineline_edit_text(fineline_t *fine, const char *text, size_t len)
 	/* Start editing the shown line */
 	fineline_history_edit(fine);
 
-	/* If a selection is pending, delete it */
+
+	/* If a selection is pending, delete it (no copy/paste) */
 	if (fine->selection >= 0) {
 		if (fine->selection > fine->cursor)
 			memmove(fine->line + fine->cursor, fine->line + fine->selection + 1, strlen(fine->line + fine->selection));
@@ -696,6 +710,39 @@ void fineline_edit_text(fineline_t *fine, const char *text, size_t len)
 			fine->cursor = fine->selection;
 		}
 		fine->selection = -1;
+	}
+	/* If in "replace' mode, then we want to replace the same number of
+	 * characters OR to the end of the line, whichever comes first.
+	 */
+	else if (fine->replace) {
+		const char *scan;
+		size_t	   scanlen, del, chsize;
+		wchar_t	   wc;
+		mbstate_t  scanstate, delstate;
+
+		/* Move as far forward in the line as there are characters
+		 * in the new text, or to the end of the line, whichever
+		 * comes first.
+		 */
+		memset(&scanstate, 0, sizeof scanstate);
+		memset(&delstate, 0, sizeof delstate);
+		for (scan = text, scanlen = len, del = 0;
+		     scanlen > 0
+			&& (chsize = mbrtowc(&wc, fine->line + del, MB_CUR_MAX, &delstate)) > 0
+			&& wc != '\n';
+		     scan += chsize, scanlen -= chsize) {
+			/* Add this character's size to the delete range */
+			del += chsize;
+
+			/* Move "scan" forward one character */
+			chsize = mbrtowc(&wc, scan, MB_CUR_MAX, &scanstate);
+			if (chsize < 1)
+				break;
+		}
+
+		/* Delete it. */
+		if (del > 0)
+			memmove(fine->line + fine->cursor, fine->line + fine->cursor + del, strlen(fine->line + fine->cursor + del) + 1);
 	}
 
 	/* If necessary, enlarge the edit buffer */
