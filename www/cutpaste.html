@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Cut and Paste</title>
+  </head>
+  <body>
+    <h1>Cut and Paste</h1>
+    <i>fineline</i> uses the common &lt;Ctrl-X&gt; and &lt;Ctrl-V&gt; keystrokes
+    to cut or copy text, and &lt;Ctrl-V&gt; to paste it.
+    It uses an in-memory buffer to store the cut/copied text.
+    If your app has multiple fineline instances running (in separate windows,
+    perpaps) then all instances will share a single cut/copy buffer, to allow
+    you to copy text from one instance to another.
+    This is all built into the library; you don't need to write any code to
+    make this work.
+    <p>
+    But what if you want to copy text between applications?  Most Linux
+    terminals let you use the mouse to select text, and then middle-click
+    to paste it.
+    That's one option, but <i>fineline</i> offers alternatives.
+    Spoiler alert: It has built-in defaults that usually work fine for
+    making &lt;Ctrl-X&gt;,  &lt;Ctrl-V&gt; and &lt;Ctrl-V&gt; cooperate with
+    your GUI's paste feature too.
+
+    <h2>Copy and Paste Hooks</h2>
+    You can call <code>fineline_paste_hook(copyfn, pastefn)</code>,
+    passing it two functions: one to call after text has been copied for
+    &lt;Ctrl-X&gt;/&lt;Ctrl-V&gt;, and one to call before &lt;Ctrl-V&gt;.
+    <p>
+    <code><b>void</b> copyfn(<b>const char</b> *<var>txt</var>)</code>
+    should make <i>fineline</i> copy <var>txt</var> to the GUI.
+    The <var>txt</var> is a '\0'-terminated UTF-8 string.
+    <p>
+    <code><b>const char</b> *pastefn(<b>void</b>)</code> should fetch the
+    current copy/paste text from the GUI, and return it as a '\0'-terminated
+    UTF-8 string.
+    If no text is available, it should return NULL.
+    If the text is received in a format other than UTF-8, then it should
+    convert to UTF-8 before returning it.
+    <i>fineline</i> will NOT free the memory returned by <code>pastefn()</code>;
+    if <code>pastefn()</code> allocates memory for the string that it returns,
+    then it needs to track that memory itself, and free or reuse it itself.
+
+    <h2>External Programs</h2>
+    If you don't want to link with the GUI libraries (and thus make your
+    application unrunnable if the library isn't installed), then you can also
+    tell <i>fineline</i> to run external programs.
+    This is done via <code>fineline_paste_cmds("copycmd","pastecmd")</code>,
+    where <var>copycmd</var> and <var>pastecmd</var> are shell command lines
+    that communicate with the GUI.
+    The <var>copycmd</var> should read the text from its stdin, and thne
+    <var>pastecmd</var> should write the GUI's paste text to its stdout.
+    <p>
+    Both X11 and Wayland offer stand-alone programs for accessing their
+    inter-process cut and paste features.
+    If you don't call <code>fineline_paste_hook()</code> or
+    <code>fineline_paste_cmds()</code>, then <i>fineline</i> will try to guess
+    whether you're running X11 or Wayland, and if so then it'll arrange for
+    those programs to be run when appropriate.
+    X11 uses <code>xclip</code> for both copying and pasting, while
+    Wayland uses <code>wl-copy</code> for copying and <code>wl-paste</code>
+    for pasting.
+    Those programs come standard with X11 and Wayland; you don't need to
+    install them separately.
+    <p>
+    I want to emphasize: <i>fineline</i> will use those programs for GUI
+    copy/paste automatically, unless you tell it otherwise.
+    <p>
+    To guess whether you're running X11 or Wayland,
+    <i>fineline</i> examines environment variables.
+    If it sees a $DISPLAY environment variable, then <i>fineline</i>
+    assumes you're running X11; if $WAYLAND_DISPLAY, then it assumes Wayland.
+    Otherwise it assumes there is no GUI, and cut/copy/paste will only
+    share text within the process.
+  </body>
+</html>

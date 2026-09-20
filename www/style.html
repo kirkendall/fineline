@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Display Styles</title>
+  </head>
+  <body>
+    <h1>Display Styles</h1>
+    <i>fineline</i> uses a few simple callbacks to update the display after
+    each keystroke.
+    Some involve cursor motion, or inserting/deleting rows.
+    Others draw the actual text in a given style.
+    <p>
+    The callbacks are all function pointers in the <tt>fineline_t</tt>
+    data structure.
+    For simplicity's sake, the basic <tt>fineline_alloc()</tt> function is
+    bolstered by "wrapper" functions that initialize all of the pointers
+    appropriately for a bare ANSI terminal (<tt>fineline_tty()</tt>)
+    or an ncursesw application (<tt>fineline_wcurses_alloc()</tt>).
+    <p>
+
+    <h2>The Callback Functions</h2>
+    The <tt>fineline_t</tt> data structure contains function pointers for
+    the following terminal-related actions.
+    The list is kept as short as possible, to simplify interfacing with a new
+    display environment.
+    <table class="referencelist">
+      <tr><th>Name</th><th>Arguments</th><th>Purpose</th></tr>
+      <tr><td>before</td><td>(fineline_t *<var>fine</var>)</td><td>Optional.  If used, this will be called at the start of line input, and may be used for detecting screen size, switch to application keypad mode, etc.</td></tr>
+      <tr><td>after</td><td>(fineline_t *<var>fine</var>)</td><td>Optional.  If used, this will be called after a line has been input, and may be used to restore any settings that were changed by <code>before()</code></td></tr>
+      <tr><td>up</td><td>(fineline_t *<var>fine</var>, int <var>delta</var>)</td><td>Move the cursor up <var>delta</var> rows.  If <var>delta</var> is negative then move the cursor down instead.  This will never move the cursor up above the top of the screen, though it may move the cursor one row past the bottom of the screen in which case the terminal should scroll upward.</td></tr>
+      <tr><td>left</td><td>(fineline_t *<var>fine</var>, int <var>delta</var>)</td><td>Move the cursor left <var>delta</var> columns.  If <var>delta</var> is negative them move the cursor right instead.  This will never be used to move the cursor off either edge of the screen.</td></tr>
+      <tr><td>scroll</td><td>(fineline_t *<var>fine</var>, int <var>delta</var>)</td><td>Insert <var>delta</var> rows into the screen, scrolling the lower part of the screen downward.  If <var>delta</var> is negative, then delete rows and scroll the lower part of the screen upward instead.</td></tr>
+      <tr><td>home</td><td>(fineline_t *<var>fine</var>)</td><td>Move the cursor to the leftmost column.</td></tr>
+      <tr><td>clear</td><td>(fineline_t *<var>fine</var>)</td><td>Erase text from the cursor position to the end of the row.</td></tr>
+      <tr><td>text</td><td>(fineline_t *<var>fine</var>, const char *<var>style</var>, const char *<var>text</var>, size_t <var>size</var>)</td><td>Erase text from the cursor position to the end of the row.</td></tr>
+    </table>
+    <p>
+    The plain ANSI terminal interface doesn't really need to know which
+    <code>fineline_t</code> the above functions are being called for.
+    For ncursesw, though, it needs the <code>fineline_t</code> mostly for the
+    <code>window</code> pointer.
+
+    <h2>Styles</h2>
+    The text styles are all identified by name, in a C string.
+    Some names are built into the library but you can also define your own,
+    mostly in the <a href="syntax.html">syntax coloring</a> callback.
+    The built-in style names are:
+    <table class="referencelist">
+      <tr><th>Style</th><th>Purpose</th><th>Typical attributes</th></tr>
+      <tr><td>prompt</td><td>The input prompt</td><td>bold yellow</td></tr>
+      <tr><td>input</td><td>Text typed by the user, without syntax coloring</td><td>normal</td></td>
+      <tr><td>select</td><td>Text selected via &lt;Shift-Arrow&gt;</td><td>normal on blue</td></tr>
+      <tr><td>match</td><td>Unmatched ()[]{} characters</td><td>bold cyan</td></tr>
+      <tr><td>search</td><td>Search prompts, for &lt;Ctrl-F&gt;, &lt;Ctrl-R&gt;, &lt;Ctrl-G&gt;, &lt;Ctrl-K&gt;</td><td>magenta</td></tr>
+      <tr><td>complete</td><td>Name completions</td><td>dim</td></tr>
+      <tr><td>hint</td><td>Hints such as function arguments</td><td>dim</td></tr>
+      <tr><td>title</td><td>Help's titles</td><td>bold</td></tr>
+      <tr><td>link</td><td>Help's links to other help pages</td><td>underlined</td></tr>
+      <tr><td>code</td><td>Help's code or monospace text</td><td></td></tr>
+      <tr><td>strong</td><td>Help's bold text</td><td>bold</td></tr>
+      <tr><td>var</td><td>Help's variable text</td><td>italic</td></tr>
+      <tr><td>output</td><td>Any text written after a line is entered</td><td>normal</td></tr>
+    </table>
+    <p>
+    Each style has a foreground color, a background color, and some boolean
+    attributes.
+    Colors are limited to normal, black, red, green, yellow, blue, magenta,
+    cyan, and white.
+    ("normal" is the terminal emulator's default foreground and background
+    colors, typically black and white.)
+    Attributes are bold, dim, italic, underlined, blinking, boxed, and strike.
+    Not all terminal emulators support all attributes, and even if they're
+    supported individually they might not work in combination.
+
+    <h2>Configuring Styles</h2>
+    You can assign the colors and other attributes of a style programatically.
+    Users can also change them while entering a like via the &lt;Ctrl-K&gt;
+    configuration keystroke.
+    <p>
+    For &lt;Ctrl-K&gt;, you should enter <var>style</var>=<var>attributes</var>
+    at the prompt, exactly as if you were setting a <i>fineline</i> option.
+    For example, "&lt;Ctrl-K&gt;prompt=green&lt;Enter&gt;" would change the
+    prompt to green.
+
+    <h3>Config strings</h3>
+    Colors and other attributes are specified via a string containing boolean
+    attribute names, foreground color names, and "on" followed by a background
+    color name.  The order in which the words appear doesn't matter.
+    For example "underlined red" would give red text on a normal background
+    with underlining.
+    <p>
+    Any boolean attribute that isn't mentioned in the string will be false
+    (not used).
+    If no foreground color is mentioned then "normal" is assumed.
+    If no "on" background color mentioned, then "normal" is assumed.
+
+    <h3>Synchronizing With The Application's Settings</h3>
+    If your application has its own scheme for storing attributes, then
+    we need a way to synchronize <tt>fineline</tt>'s idea of the style
+    attributes and your application.
+    This is entirely optional!
+    <i>fineline</i> can take care of its own settings.
+    <p>
+    Call <tt>fineline_config_hook()</tt> to arrange for your application's
+    function to be called whenever a <i>fineline</i> option or style is
+    is changed.
+    <p>
+    Going the other way, if your application's idea of the settings has changed
+    then it should call <tt>fineline_config_set()</tt> to copy the change into
+    <i>fineline</i>.
+
+    <h3>Saving Attributes</h3>
+    Every time <i>fineline</i> changes its options or style attributes, it
+    writes all of them out to a file.
+    That file is named $HOME/.config/fineline/fineline.conf unless you
+    call <tt>fineline_config_name(<var>name</var>)</tt> to change it,
+    in which case the file is named $HOME/.config/fineline/<var>name</var>.conf.
+    <p>
+    That file will be reloaded when <i>fineline</i> initializes itself
+    (i.e., when the first <tt>fineline_t</tt> is allocated),
+    or when <tt>fineline_config_name(<var>name</var>)</tt> is called.
+    If your application also stores attributes and you want your application's
+    attributes to override the reloaded ones, then you should call
+    <tt>fineline_config_name(<var>name</var>)</tt> before your application
+    loads its settings, and then use <tt>fineline_config_set(<var>text</var>)</tt>
+    after it loads its settings.
+
+  </body>
+</html>
