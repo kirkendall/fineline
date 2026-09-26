@@ -46,7 +46,7 @@ The editing commands are:
 | \<Shift-Tab> | Delete whitespace to previous tabstop. |
 | \<Tab> | Perform name completion, or indent to next tabstop. |
 | \<Esc> | Save the line in history but don't process it. |
-| \<Ctrl-@> | (unassigned, often \<Ctrl-Shift-2>) |
+| \<Ctrl-@> | (unassigned, often \<Ctrl-Shift-2> or \<Ctrl-Space>) |
 | \<Ctrl-A> | Select all text |
 | \<Ctrl-B> | Bounce between a history line and the new input line. |
 | \<Ctrl-C> | Copy the selected text to the paste buffer but don't delete it. |
