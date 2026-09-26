@@ -402,13 +402,19 @@ int fineline_edit(fineline_t *fine, fineline_edit_t edit)
 		break;
 
 	case FINELINE_TAB:	
-		/* Insert spaces to next tabstop */
+		/*!!! Need to check for completions */
+
+		/* Insert a tab character or the equivalent number of spaces */
 		fineline_history_edit(fine);
-		col = fineline_char_column_number(fine->line, fine->cursor, fine->config.tabstop);
-		do {
-			fineline_edit_char(fine, L' ');
-			col++;
-		} while (col % fine->config.tabstop != 0);
+		if (fine->config.tabspaces) {
+			/* Insert spaces to next tabstop */
+			col = fineline_char_column_number(fine->line, fine->cursor, fine->config.tabstop);
+			do {
+				fineline_edit_char(fine, L' ');
+				col++;
+			} while (col % fine->config.tabstop != 0);
+		} else
+			fineline_edit_char(fine, L'\t');
 		break;
 
 	case FINELINE_HOME:	
@@ -555,6 +561,9 @@ int fineline_edit(fineline_t *fine, fineline_edit_t edit)
 		break;
 
 	case FINELINE_ENTER:
+		/* Always turn off replace mode */
+		fine->replace = 0;
+
 		/* If the line is known to be incomplete, then just add a
 		 * newline to the input.
 		 */
@@ -728,7 +737,7 @@ void fineline_edit_text(fineline_t *fine, const char *text, size_t len)
 		memset(&delstate, 0, sizeof delstate);
 		for (scan = text, scanlen = len, del = 0;
 		     scanlen > 0
-			&& (chsize = mbrtowc(&wc, fine->line + del, MB_CUR_MAX, &delstate)) > 0
+			&& (chsize = mbrtowc(&wc, fine->line + fine->cursor + del, MB_CUR_MAX, &delstate)) > 0
 			&& wc != '\n';
 		     scan += chsize, scanlen -= chsize) {
 			/* Add this character's size to the delete range */
