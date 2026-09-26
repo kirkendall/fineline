@@ -21,7 +21,8 @@
 #include <wchar.h>
 #include <fineline.h>
 
-#define DEBUG_IMAGE
+/* Define this to log info about image generation to "img.log" */
+#undef DEBUG_IMAGE
 
 #ifdef DEBUG_IMAGE
 #include <stdarg.h>
@@ -306,6 +307,7 @@ fineline_image_t *fineline_image(fineline_t *fine, int plain)
 		promptwidth = img->thiscol;
 		promptspace = (fine->prompt[strlen(fine->prompt) - 1] == ' ');
 	}
+	img->virtualcol = 0;
 
 	/* Add characters from the input buffer, watching for special characters
 	 * such as newlines, tabs, and control characters.  When we hit the
@@ -317,10 +319,11 @@ fineline_image_t *fineline_image(fineline_t *fine, int plain)
 	 * current image's toprow match the previous image's toprow, so we
 	 * don't scroll any more than we have to.
 	 */
-if (fine->image)
+if (fine->image) {
 imglog("\ncursor on line %d, img->height=%d, fine->image->toprow=%d\n", fineline_char_line_number(fine->line, fine->cursor), img->toprow, fine->image->toprow);
-else
+} else {
 imglog("\ncursor on line %d, no previous image\n", fineline_char_line_number(fine->line, fine->cursor));
+}
 
 	memset(&state, 0, sizeof state);
 	for (scan = fine->line, style = fine->style;
@@ -344,6 +347,7 @@ imglog("\ncursor on line %d, no previous image\n", fineline_char_line_number(fin
 			/* Newlines force a new row, and also output a prompt */
 			start_new_row(img);
 			add_line_prompt(img, promptwidth, promptspace, ++lineno);
+			img->virtualcol = 0;
 		} else if (wc == '\t') {
 			/* Tabs are displayed as a variable number of spaces */
 			add_spaces(img, fine->config.tabstop - img->virtualcol % fine->config.tabstop, NULL);
