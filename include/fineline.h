@@ -15,7 +15,7 @@ typedef enum {
 	FINELINE_BACK_WORD,	/* delete to start of word */
 	FINELINE_BACK_LINE,	/* delete to start of line */
 	FINELINE_BACK_TAB,	/* delete to start of tab */
-	FINELINE_TAB,		/* add spaces to next tabstop */
+	FINELINE_TAB,		/* completion or add spaces to next tabstop */
 
 	/* Cursor keypad keys */
 	FINELINE_HOME,		/* move cursor to start of line */
