@@ -19,7 +19,7 @@ static size_t bufsize;	/* Size of the buffer */
 static size_t bufused;	/* Number of bytes used in the buffer */
 
 /* These configure the library to access the GUI's cut buffer */
-static int didcopypaste = 1;	/* so first copy/paste can auto-detect */
+static int didcopypaste = 0;	/* so first copy/paste can auto-detect */
 static const char *aftercopycmd, *beforepastecmd;
 static void (*aftercopy)(const char *txt);
 static char *(*beforepaste)(void);
