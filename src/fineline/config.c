@@ -15,9 +15,9 @@ static fineline_config_t defaults;
 #define CONFIG_OFFSET(field)	((char*)&defaults.field - (char*)&defaults)
 
 /* This macro is used in conjunction with the values in lookup[] to generate
- * a pointer to a given config setting's value.
+ * a pointer to a given config setting's value, and dereference it.
  */
-#define CONFIG_PTR(config, offset, type) (type *)((char *)&(config) + (offset))
+#define CONFIG_VALUE(config, offset, type) (*(type *)((char *)(config) + (offset)))
 
 /* This is a table of names, types, and offsets of all config fields */
 static struct {
@@ -112,7 +112,7 @@ void fineline_config_free(fineline_t *fine)
 */
 static const char *config_set_single(fineline_config_t *config, const char *str, size_t len)
 {
-	char	*equals, **valptr;
+	char	*equals, *val;
 	int	i, n;
 	size_t	namelen;
 
@@ -143,7 +143,7 @@ static const char *config_set_single(fineline_config_t *config, const char *str,
 	/* The way the value is handled depends on its type */
 	switch (lookup[i].typec) {
 	case 'b': /* Boolean */
-		*CONFIG_PTR(config, lookup[i].offset, int) = equals[1] == 't';
+		CONFIG_VALUE(config, lookup[i].offset, int) = equals[1] == 't';
 		break;
 
 	case 'i': /* Integer */
@@ -154,16 +154,16 @@ static const char *config_set_single(fineline_config_t *config, const char *str,
 			}
 			n = n * 10 + *equals - '0';
 		}
-		*CONFIG_PTR(config, lookup[i].offset, int) = n;
+		CONFIG_VALUE(config, lookup[i].offset, int) = n;
 		break;
 
 	case 's': /* String */
-		valptr = CONFIG_PTR(config, lookup[i].offset, char *);
-		if (*valptr)
-			free(*valptr);
-		*valptr = malloc(len - namelen);
-		strncpy(*valptr, equals + 1, len - namelen - 1);
-		(*valptr)[len - namelen] = '\0';
+		val = CONFIG_VALUE(config, lookup[i].offset, char *);
+		if (val)
+			free(val);
+		val = malloc(len - namelen);
+		strncpy(val, equals + 1, len - namelen - 1);
+		val[len - namelen] = '\0';
 		break;
 	}
 	return NULL;
@@ -196,6 +196,9 @@ const char *fineline_config_set(fineline_config_t *config, const char *str)
 		error = config_set_single(config, str, len);
 		if (error)
 			return error;
+
+		/* Move past it */
+		str += len;
 	}
 
 	/* All done, no errors encountered */
@@ -220,16 +223,16 @@ const char *fineline_config_get(fineline_config_t *config)
 		switch (lookup[i].typec) {
 		case 'b': len += 5; break;
 		case 'n': len += 20; break;
-		default:  len += strlen(*CONFIG_PTR(config, lookup[i].offset, char *));
+		default:  len += strlen(CONFIG_VALUE(config, lookup[i].offset, char *));
 		}
 		if (buflen + len > sizeof buf)
 			break;
 
 		/* Append this setting */
 		switch (lookup[i].typec) {
-		case 'b': sprintf(&buf[buflen], "%s=%s,", lookup[i].name, *CONFIG_PTR(config, lookup[i].offset, int) ? "true" : "false");	break;
-		case 'n': sprintf(&buf[buflen], "%s=%d,", lookup[i].name, *CONFIG_PTR(config, lookup[i].offset, int));	break;
-		default: sprintf(&buf[buflen], "%s=%s,", lookup[i].name, *CONFIG_PTR(config, lookup[i].offset, char *));
+		case 'b': sprintf(&buf[buflen], "%s=%s,", lookup[i].name, CONFIG_VALUE(config, lookup[i].offset, int) ? "true" : "false");	break;
+		case 'n': sprintf(&buf[buflen], "%s=%d,", lookup[i].name, CONFIG_VALUE(config, lookup[i].offset, int));	break;
+		default: sprintf(&buf[buflen], "%s=%s,", lookup[i].name, CONFIG_VALUE(config, lookup[i].offset, char *));
 		}
 		buflen += len;
 	}
