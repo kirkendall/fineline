@@ -27,8 +27,6 @@ static struct {
 	{FINELINE_BACK_SPACE,	"\177"},	/* delete or backspace */
 	{FINELINE_DELETE,	"\033[3~"},	/* delete character at cursor */
 	{FINELINE_INSERT,	"\033[2~"},	/* toggle insert/overwrite mode */
-	{FINELINE_BACK_SPACE,	"\b"},
-	{FINELINE_TAB,		"\t"},		/* insert spaces to next tab */
 	{FINELINE_BACK_TAB,	"\033[Z"},	/* delete to start of tab */
 	{FINELINE_HOME,		"\033[H"},	/* move to start of line */
 	{FINELINE_HOME,		"\033OH"},	/* move to start of line */
@@ -46,8 +44,6 @@ static struct {
 	{FINELINE_DOWN,		"\033OB"},	/* move down */
 	{FINELINE_PAGE_UP,	"\033[5~"},	/* scroll page back */
 	{FINELINE_PAGE_DOWN,	"\033[6~"},	/* scroll page forward */
-	{FINELINE_ENTER,	"\r"},		/* process line or add newline */
-	{FINELINE_ENTER,	"\n"},		/* process line or add newline */
 	{FINELINE_S_HOME,	"\033[1;2H"},	/* select to start of line */
 	{FINELINE_S_END,	"\033[1;2F"},	/* select to end of line */
 	{FINELINE_S_LEFT_WORD,	"\033[1;6D"},	/* select left 1 word */
@@ -63,11 +59,6 @@ static struct {
 	 */
 	{FINELINE_S_HOME,	"\033[1;5H"},	/* select to start of line */
 	{FINELINE_S_END,	"\033[1;5F"},	/* select to end of line */
-
-	{FINELINE_BACK_WORD,	"\027"},	/* ^W delete preceding word */
-	{FINELINE_EOT,		"\004"},	/* ^D exit, only if line is empty */
-	{FINELINE_SAVE,		"\013"},	/* ^S Save to history but don't process */
-	{FINELINE_QUIT,		"\011"}		/* ^Q exit without processing the line */
 };
 
 static fineline_t *ttygeneric;
@@ -77,7 +68,6 @@ static void resized(int signum)
 	struct winsize w;
 
 	ioctl(0, TIOCGWINSZ, &w);
-	printf("rows=%d, columns=%d\r\n", w.ws_row, w.ws_col);
 	doingresize = 1;
 	newrows = w.ws_row;
 	newcolumns = w.ws_col;
