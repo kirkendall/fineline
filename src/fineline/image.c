@@ -201,26 +201,53 @@ static void add_string(fineline_image_t *img, const char *text, const char *styl
 }
 
 /* Add a numbered version of the prompt. */
-static void add_line_prompt(fineline_image_t *img, int width, int space, int lineno)
+static void add_line_prompt(fineline_t *fine, fineline_image_t *img, int lineno)
 {
-	char	prompt[20];
 
 	/* If no main prompt, then no prompts on extra lines either */
-	if (width == 0)
+	if (!fine->prompt || !*fine->prompt)
 		return;
 
-	/* Generate the prompt */
-	if (space && width > 2)
-		snprintf(prompt, sizeof prompt, "%17d> ", lineno);
-	else if (width > 1)
-		snprintf(prompt, sizeof prompt, "%18d>", lineno);
-	else /* width == 1 */
-		strcpy(prompt, ">");
-
-	/* All characters in the generated prompt have a width of 1.  Use the
-	 * rightmost portion of the prompt string.
+	/* If first line, then use the prompt unaltered but also measure its
+	 * width and find its tail so we can use the tail in numbered prompts.
 	 */
-	add_string(img, prompt + strlen(prompt) - width, "prompt");
+	if (lineno == 1) {
+		int	i;
+		wchar_t	wc;
+		mbstate_t mbstate = {0};
+
+		/* Add the unaltered prompt */
+		add_string(img, fine->prompt, "prompt");
+		fine->promptwidth = img->thiscol;
+
+		/* Look for the tail.  Find its width. */
+		fine->prompttailwidth = 0;
+		for (i = strlen(fine->prompt); --i >= 0 && fine->prompt[i] == ' '; )
+			fine->prompttailwidth++;
+		while (i > 0 && (fine->prompt[i] & 0xc0) == 0x80)
+			i--;
+		fine->prompttail = fine->prompt + i;
+		memset(&mbstate, 0, sizeof mbstate);
+		if (mbrtowc(&wc, fine->prompttail, MB_CUR_MAX, &mbstate) > 0)
+			fine->prompttailwidth += wcwidth(wc);
+		else
+			fine->prompttailwidth++;
+		return;
+	}
+
+	/* Generate the prompt */
+	if (fine->prompttail != fine->prompt) {
+		/* Show as many digits of the line number as will fit, followed
+		 * by the prompt tail.
+		 */
+		char	prompt[20];
+		snprintf(prompt, sizeof prompt, "%18d", lineno);
+		add_string(img, prompt + strlen (prompt) - fine->promptwidth + fine->prompttailwidth, "prompt");
+		add_string(img, fine->prompttail, "prompt");
+	} else {
+		/* No room for digits */
+		add_string(img, fine->prompttail, "prompt");
+	}
 }
 
 /* This gets called when the cursor position is detected.  It records the
@@ -286,8 +313,6 @@ fineline_image_t *fineline_image(fineline_t *fine, int plain)
 	size_t	len;	/* byte length of a single UTF-8 character */
 	mbstate_t state;
 	fineline_image_t *img;
-	int	promptwidth;
-	int	promptspace;	/* whether prompt ends with a space */
 	char	tmpstr[10];
 	const wchar_t	carat = '^';
 	int	lineno = 1;
@@ -299,14 +324,7 @@ fineline_image_t *fineline_image(fineline_t *fine, int plain)
 	 * lines' prompts use the same width.  We assume the prompt fits on a
 	 * single row (no wrapping).
 	 */
-	if (!fine->prompt || !*fine->prompt) {
-		promptwidth = 0;
-		promptspace = 0;
-	} else {
-		add_string(img, fine->prompt, "prompt");
-		promptwidth = img->thiscol;
-		promptspace = (fine->prompt[strlen(fine->prompt) - 1] == ' ');
-	}
+	add_line_prompt(fine, img, 1);
 	img->virtualcol = 0;
 
 	/* Add characters from the input buffer, watching for special characters
@@ -346,7 +364,7 @@ imglog("\ncursor on line %d, no previous image\n", fineline_char_line_number(fin
 		if (wc == '\n') {
 			/* Newlines force a new row, and also output a prompt */
 			start_new_row(img);
-			add_line_prompt(img, promptwidth, promptspace, ++lineno);
+			add_line_prompt(fine, img, ++lineno);
 			img->virtualcol = 0;
 		} else if (wc == '\t') {
 			/* Tabs are displayed as a variable number of spaces */
