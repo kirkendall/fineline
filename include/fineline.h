@@ -228,6 +228,9 @@ typedef struct fineline_s {
 	 */
 
 	const char *prompt;	/* Main prompt string */
+	const char *prompttail;	/* Last punctuation and maybe some spaces */
+	int	promptwidth;	/* Overall width of the prompt */
+	int	prompttailwidth;/* Width of the prompttail */
 
 	char	*line;		/* Line buffer -- usually history[0] */
 	size_t	linesize;	/* size of the history[0] buffer */
