@@ -185,6 +185,8 @@ int fineline_edit(fineline_t *fine, fineline_edit_t edit)
 	case FINELINE_COPY:
 	case FINELINE_CUT:
 	case FINELINE_PASTE:
+	case FINELINE_BACK_SPACE:
+	case FINELINE_DELETE:
 		/* Don't start a selection or end one */
 		break;
 
@@ -308,6 +310,16 @@ int fineline_edit(fineline_t *fine, fineline_edit_t edit)
 		break;
 
 	case FINELINE_DELETE:
+		/* If a selection is pending, delete it */
+		if (fine->selection >= 0) {
+			/* If on a history line, copy it to current line */
+			fineline_history_edit(fine);
+
+			/* Delete it.  Don't copy it to the clipboard */
+			copypaste(fine, 0, 1, 0);
+			break;
+		}
+
 		/* Delete character at cursor, unless at end of input */
 		if (fine->line[fine->cursor]) {
 			/* If on a history line, copy it to current line */
@@ -324,9 +336,21 @@ int fineline_edit(fineline_t *fine, fineline_edit_t edit)
 		break;
 
 	case FINELINE_BACK_SPACE:
+		/* If a selection is pending, delete it */
+		if (fine->selection >= 0) {
+			/* If on a history line, copy it to current line */
+			fineline_history_edit(fine);
+
+			/* Delete it.  Don't copy it to the clipboard */
+			copypaste(fine, 0, 1, 0);
+			break;
+		}
+
 		/* Delete character before cursor */
-		fineline_edit(fine, FINELINE_LEFT);
-		fineline_edit(fine, FINELINE_DELETE);
+		if (fine->cursor > 0) {
+			fineline_edit(fine, FINELINE_LEFT);
+			fineline_edit(fine, FINELINE_DELETE);
+		}
 		break;
 
 	case FINELINE_BACK_WORD:
@@ -598,13 +622,13 @@ int fineline_edit(fineline_t *fine, fineline_edit_t edit)
 		return 2;
 
 	case FINELINE_CUT:
-		/* Copy text to the cut buffer, and then delete it. */
+		/* Copy text to the clipboard, and then delete it. */
 		fineline_history_edit(fine);
 		copypaste(fine, 1, 1, 0);
 		break;
 
 	case FINELINE_COPY:
-		/* Copy text to the cut buffer */
+		/* Copy text to the clipboard */
 		copypaste(fine, 1, 0, 0);
 		break;
 
@@ -822,7 +846,7 @@ fineline_edit_t fineline_edit_ctrl(fineline_t *fine, wchar_t ch)
 	    FINELINE_SAVE,	/* ^S - save file and exit file editor */
 	    FINELINE_MIN,	/* ^T */
 	    FINELINE_BACK_LINE,	/* ^U - erase to start of line/input */
-	    FINELINE_PASTE,	/* ^V - paste text from cut buffer */
+	    FINELINE_PASTE,	/* ^V - paste text from clipboard */
 	    FINELINE_BACK_WORD,	/* ^W - erase to start of word */
 	    FINELINE_CUT,	/* ^X - copy selected text, and delete it */
 	    FINELINE_REDO,	/* ^Y - redo */
