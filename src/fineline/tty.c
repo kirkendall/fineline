@@ -61,7 +61,6 @@ static struct {
 	{FINELINE_S_END,	"\033[1;5F"},	/* select to end of line */
 };
 
-static fineline_t *ttygeneric;
 static int doingresize, newrows, newcolumns;
 static void resized(int signum)
 {
@@ -71,10 +70,20 @@ static void resized(int signum)
 	doingresize = 1;
 	newrows = w.ws_row;
 	newcolumns = w.ws_col;
-	if (ttygeneric) {
-		ttygeneric->rows = newrows;
-		ttygeneric->columns = newcolumns;
+}
+
+/* Return the generic tty-oriented (non-curses) fineline_t, allocating it if
+ * if hasn't already been allocated.  Some functions use this when passed NULL
+ * for the fineline_t.
+ */
+fineline_t *fineline_tty_generic(void)
+{
+	static fineline_t *ttygeneric;
+	if (!ttygeneric) {
+		ttygeneric = fineline_tty_alloc();
+		fineline_history_lines(ttygeneric, 50);
 	}
+	return ttygeneric;
 }
 
 
@@ -376,17 +385,8 @@ char *fineline_tty(fineline_t *fine, const char *prompt)
 	int	result;
 
 	/* If called with NULL, then use a generic fineline_t */
-	if (fine) {
-		if (ttygeneric && ttygeneric != fine)
-			fineline_free(ttygeneric);
-		ttygeneric = fine;
-	} else {
-		if (!ttygeneric) {
-			ttygeneric = fineline_tty_alloc();
-			fineline_history_lines(ttygeneric, 50);
-			fineline_history_add(ttygeneric, "fineline library 1.0, copyright 2026 by Steve Kirkendall\nFreely redistributable under the terms of GNU LGPL 3.0 or later");
-		}
-		fine = ttygeneric;
+	if (!fine) {
+		fine = fineline_tty_generic();
 	}
 
 	/* Store the prompt */

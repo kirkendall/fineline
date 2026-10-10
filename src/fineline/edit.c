@@ -535,7 +535,9 @@ int fineline_edit(fineline_t *fine, fineline_edit_t edit)
 		} else if (fine->historysize) {
 			/* Otherwise move back in history */
 			fineline_history_show(fine, 1);
-			fine->cursor = strlen(fine->line);
+			fine->cursor = 0;
+			while (fine->line[fine->cursor] && fine->line[fine->cursor] != '\n')
+				fine->cursor++;
 		}
 		break;
 

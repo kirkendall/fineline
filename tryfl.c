@@ -3,8 +3,8 @@
 #include <locale.h>
 #include "fineline.h"
 
-/*#define PROMPT "Try>"*/
-/*#define PROMPT "Try\u2502"*/
+//#define PROMPT "Try>"
+//#define PROMPT "Try\u2502"
 #define PROMPT "Try\u25b7"
 
 int main(int argc, char **argv)
@@ -12,9 +12,11 @@ int main(int argc, char **argv)
 	char *line;
 
 	setlocale(LC_ALL, "");
+	fineline_history_load(NULL, "tryfl.history");
 	while ((line = fineline(PROMPT)) != NULL) {
 		printf("\"%s\"\n", line);
 		free(line);
 	}
+	fineline_history_save(NULL, "tryfl.history");
 	return 0;
 }

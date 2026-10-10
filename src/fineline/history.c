@@ -10,6 +10,10 @@ int fineline_history_lines(fineline_t *fine, int size)
 {
 	int	i;
 
+	/* Maybe use tty generic */
+	if (!fine)
+		fine = fineline_tty_generic();
+
 	/* If too small, just return the current value */
 	if (size < 1)
 		return fine->historysize;
@@ -38,6 +42,10 @@ void fineline_history_add(fineline_t *fine, const char *line)
 	/* If empty, then do nothing */
 	if (!line || !*line)
 		return;
+
+	/* Maybe use tty generic */
+	if (!fine)
+		fine = fineline_tty_generic();
 
 	/* If configured to not store history, then do nothing */
 	if (fine->historysize == 1)
@@ -79,6 +87,10 @@ void fineline_history_load(fineline_t *fine, const char *historyname)
 	size_t	bufsize;
 	size_t	bufused;
 	FILE	*fp;
+
+	/* Maybe use tty generic */
+	if (!fine)
+		fine = fineline_tty_generic();
 
 	/* Open the file.  If we can't do that, silently load nothing */
 	fp = fopen(historyname, "r");
@@ -123,6 +135,10 @@ void fineline_history_save(fineline_t *fine, const char *historyname)
 	int	i;
 	char	*scan;
 
+	/* Maybe use tty generic */
+	if (!fine)
+		fine = fineline_tty_generic();
+
 	/* Open the file for writing.  If we can't write, do nothing */
 	fp = fopen(historyname, "w");
 	if (!fp)
@@ -131,7 +147,7 @@ void fineline_history_save(fineline_t *fine, const char *historyname)
 	/* Write the oldest history first.  If history contains \n characters,
 	 * convert them to \r so we can use \n as a delimiter.
 	 */
-	for (i = fine->historyused - 1; i >= 1; i++) {
+	for (i = fine->historyused - 1; i >= 1; i--) {
 		for (scan = fine->history[i]; *scan; scan++) {
 			if (*scan == '\n')
 				putc('\r', fp);

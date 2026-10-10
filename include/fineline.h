@@ -263,6 +263,7 @@ void fineline_free(fineline_t *);
  * fineline_tty() function reads a line and returns it as a dynamic string,
  * similar to readline().
  */
+fineline_t *fineline_tty_generic(void);
 fineline_t *fineline_tty_alloc(void);
 char *fineline_tty(fineline_t *fine, const char *prompt);
 char *fineline(const char *prompt);
