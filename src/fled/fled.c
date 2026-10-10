@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <wchar.h>
 #include <string.h>
+#include <locale.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -28,6 +29,9 @@ int main(int argc, char **argv)
 	int	height;
 	char	*startline;
 	int	fd;
+
+	/* Always set the locale */
+	setlocale(LC_ALL, "");
 
 	/* Common flags */
 	if (argc > 1 && !strcmp(argv[1], "--help")) {
@@ -112,7 +116,9 @@ int main(int argc, char **argv)
 	}
 
 	/* Edit it */
-	textout = fineline_tty(editor, "  1|"/*"  1\u2551"*/);
+	//textout = fineline_tty(editor, "  1\u2551");
+	//textout = fineline_tty(editor, "  1|");
+	textout = fineline_tty(editor, "  1\xe2\x94\x82 ");
 
 	/* Maybe save it */
 	if (textout && strcmp(textin, textout)) {
