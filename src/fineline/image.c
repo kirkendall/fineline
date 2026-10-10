@@ -19,6 +19,7 @@
 #define _XOPEN_SOURCE
 #define __USE_XOPEN
 #include <wchar.h>
+#include <assert.h>
 #include <fineline.h>
 
 /* Define this to log info about image generation to "img.log" */
@@ -54,6 +55,8 @@ static fineline_image_t *alloc_image(fineline_t *fine)
 	img = malloc(sizeof *img);
 	memset(img, 0, sizeof *img);
 	img->height = fine->rows;
+	if (fine->config.window > 0 && fine->rows > fine->config.window)
+		img->height = fine->config.window;
 	img->width = fine->columns;
 	img->row = calloc(img->height, sizeof *img->row);
 	img->style = calloc(img->height, sizeof *img->style);
@@ -139,13 +142,13 @@ static void add_char(fineline_image_t *img, wchar_t wc, const char *text, int ch
 
 	/* Get its width. If not known, skip it */
 	charWidth = wcwidth(wc);
-	if (charWidth < 0)
+	if (charWidth < 0) {
+		fprintf(stderr, "add_char(): Don't know width of \\u%04x\n", (int)wc);
 		return;
+	}
 
-	/* If it doesn't fit, or it's zero width at the exact end of the row,
-	 * then start a new row.
-	 */
-	if (img->thiscol + (charWidth ? charWidth : 1) > img->width)
+	/* If it doesn't fit then start a new row.  */
+	if (img->thiscol + charWidth > img->width)
 		start_new_row(img);
 
 	/* If the row buffer is too small, enlarge it */
@@ -203,6 +206,8 @@ static void add_string(fineline_image_t *img, const char *text, const char *styl
 /* Add a numbered version of the prompt. */
 static void add_line_prompt(fineline_t *fine, fineline_image_t *img, int lineno)
 {
+	/* Can only do this at the start of a row */
+	assert(img->thiscol == 0);
 
 	/* If no main prompt, then no prompts on extra lines either */
 	if (!fine->prompt || !*fine->prompt)

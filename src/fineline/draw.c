@@ -30,15 +30,17 @@ static void draw_row(fineline_t *fine, fineline_image_t *image, int row)
 	/* If the new version of this row is shorter than the previous version,
 	 * then clear to the end of the row
 	 */
-	if (fine->image && image->rowwidth[row] < fine->image->rowwidth[row])
+	if (fine->image
+	 && fine->image->usedrows >= row
+	 && image->rowwidth[row] < fine->image->rowwidth[row])
 		fine->clear(fine);
 }
 
 
 /* Display the current input.  This is likely to involve moving the cursor back
- * to where the line began (unless this is a fresh line), outputting the prompt,
- * drawing the text (being mindful of line wrap, and syntax coloring) and then
- * moving the cursor to the correct position within the line.
+ * to where the entry began (unless this is a fresh entry), outputting the
+ * prompt, drawing the text (being mindful of line wrap, and syntax coloring)
+ * and then moving the cursor back to the correct position within the line.
  */
 void fineline_draw(fineline_t *fine, int plain)
 {
@@ -78,6 +80,7 @@ void fineline_draw(fineline_t *fine, int plain)
 	/* Generate a new image */
 	img = fineline_image(fine, plain);
 
+{FILE *fp = fopen("image", "w"); fprintf(fp, "prompt=\"%s\" promptwidth=%d prompttail=\"%s\" prompttailwidth=%d, window=%d\n", fine->prompt, fine->promptwidth, fine->prompttail, fine->prompttailwidth, fine->config.window); for (row = 0; row < img->usedrows; row++) { fputs(img->row[row], fp); putc('\n', fp); }; fclose(fp); }
 	/* Are we updating an old image? */
 	if (fine->image) {
 		/* Yes -- move the cursor back to the start of the first row */
@@ -89,7 +92,7 @@ void fineline_draw(fineline_t *fine, int plain)
 		/* If the top row is moved (due to scrolling) then insert or
 		 * delete rows.  Also adjust the old image to match.
 		 */
-		if (img->toprow != fine->image->toprow) {
+		if (0 && img->toprow != fine->image->toprow) {
 			fine->scroll(fine, fine->image->toprow - img->toprow);
 			/*!!! Adjust the old image */
 		}
@@ -118,10 +121,12 @@ void fineline_draw(fineline_t *fine, int plain)
 		if (row > img->usedrows)
 			fine->up(fine, row - img->usedrows);
 	} else {
-		/* Draw all rows */
+		/* Draw all rows. */
 		for (row = 0; row < img->usedrows; row++) {
-			/* If the row has changed, redraw it */
+			/* Draw this row. */
 			draw_row(fine, img, row);
+
+			/* If not last, then move to the start of the next. */
 			if (row + 1 < img->usedrows) {
 				fine->home(fine);
 				fine->up(fine, -1);

@@ -112,7 +112,7 @@ int main(int argc, char **argv)
 	}
 
 	/* Edit it */
-	textout = fineline_tty(editor, "  1\u2551");
+	textout = fineline_tty(editor, "  1|"/*"  1\u2551"*/);
 
 	/* Maybe save it */
 	if (textout && strcmp(textin, textout)) {

@@ -1,6 +1,6 @@
 LIB=	lib
 INCLUDE=include
-CC=	gcc -g -fpic
+CC=	gcc -g -fpic -fsanitize=address
 CFLAGS=	-Wall -I$(INCLUDE)
 
 all: libs tryfl fled
