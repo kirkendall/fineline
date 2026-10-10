@@ -80,12 +80,13 @@ void fineline_draw(fineline_t *fine, int plain)
 	/* Generate a new image */
 	img = fineline_image(fine, plain);
 
-{FILE *fp = fopen("image", "w"); fprintf(fp, "prompt=\"%s\" promptwidth=%d prompttail=\"%s\" prompttailwidth=%d, window=%d\n", fine->prompt, fine->promptwidth, fine->prompttail, fine->prompttailwidth, fine->config.window); for (row = 0; row < img->usedrows; row++) { fputs(img->row[row], fp); putc('\n', fp); }; fclose(fp); }
+FILE *fp = fopen("image", "w"); fprintf(fp, "prompt=\"%s\" promptwidth=%d prompttail=\"%s\" prompttailwidth=%d, window=%d\n", fine->prompt, fine->promptwidth, fine->prompttail, fine->prompttailwidth, fine->config.window); fputs("=================================\n", fp); for (row = 0; row < img->usedrows; row++) { fputs(img->row[row], fp); putc('\n', fp); } fputs("=================================\n", fp);
+
 	/* Are we updating an old image? */
 	if (fine->image) {
 		/* Yes -- move the cursor back to the start of the first row */
 		if (fine->image->cursorrow > 0)
-		fine->up(fine, fine->image->cursorrow);
+			fine->up(fine, fine->image->cursorrow);
 		fine->home(fine);
 		col = 0;
 
@@ -93,6 +94,7 @@ void fineline_draw(fineline_t *fine, int plain)
 		 * delete rows.  Also adjust the old image to match.
 		 */
 		if (0 && img->toprow != fine->image->toprow) {
+fprintf(fp, "Scrolling %d, fine->image->toprow=%d, img->toprow=%d\n", fine->image->toprow - img->toprow, fine->image->toprow, img->toprow);
 			fine->scroll(fine, fine->image->toprow - img->toprow);
 			/*!!! Adjust the old image */
 		}
@@ -114,14 +116,20 @@ void fineline_draw(fineline_t *fine, int plain)
 		 * then erase them.
 		 */
 		for (; row < fine->image->usedrows - 1; row++) {
-			fine->clear(fine);
-			fine->up(fine, -1);
+fprintf(fp, "Erasing row %d completely\n", row + 1);
+			fine->home(fine);
 			col = 0;
+			fine->up(fine, -1);
+			fine->clear(fine);
 		}
-		if (row > img->usedrows)
-			fine->up(fine, row - img->usedrows);
+		if (row > img->usedrows - 1) {
+fprintf(fp, "Moving up %d rows after erasing\n", row - img->usedrows + 1);
+			fine->up(fine, row - img->usedrows + 1);
+			row = img->usedrows;
+		}
 	} else {
 		/* Draw all rows. */
+fprintf(fp, "Drawing all rows from scratch\n");
 		for (row = 0; row < img->usedrows; row++) {
 			/* Draw this row. */
 			draw_row(fine, img, row);
@@ -135,6 +143,7 @@ void fineline_draw(fineline_t *fine, int plain)
 		row--;
 		col = img->rowwidth[img->usedrows - 1];
 	}
+fprintf(fp, "After drawing, row=%d, col=%d\n", row, col);
 
 	/* Move the visible cursor back where it belongs */
 	if (img->cursorrow < img->usedrows - 1)
@@ -146,6 +155,7 @@ void fineline_draw(fineline_t *fine, int plain)
 	if (fine->image)
 		fineline_image_free(fine->image);
 	fine->image = img;
+fclose(fp);
 }
 
 /* Move the cursor to the line after the input.  This function should be called
