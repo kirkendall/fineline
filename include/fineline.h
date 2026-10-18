@@ -240,11 +240,11 @@ typedef struct fineline_s {
 	char	searchprompt;	/* 0 if not doing a search prompt, else char */
 	char	searchbuf[50];	/* search buffer */
 
-	void (*colorer)(struct fineline_s *);
+	int (*style_hook)(struct fineline_s *);
 	const char **style;
 	size_t stylesize;	/* dimension of style */
 
-	void (*completer)(struct fineline_s *);
+	void (*complete_hook)(struct fineline_s *);
 	char	*completesame;	/* Common part of name completion */
 	char	**complete;	/* All name completions */
 	int	completesize;	/* number of allocated completion slots */

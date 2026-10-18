@@ -48,18 +48,35 @@ void fineline_draw(fineline_t *fine, int plain)
 	fineline_image_t *img;
 
 	/* Make sure the styling info is at least as large as the current
-	 * input, and that it's empty.
+	 * input, and that it's empty.  Note that if we're looking at a
+	 * history line, fine->linesize isn't relevant; we need to count
+	 * the characters in the displayed line.
 	 */
-	if (fine->stylesize < fine->linesize) {
+	if (fine->stylesize < strlen(fine->line)) {
 		free(fine->style);
-		fine->style = calloc(fine->linesize, sizeof(*fine->style));
+		fine->style = calloc(strlen(fine->line), sizeof(*fine->style));
 	} else {
 		memset(fine->style, 0, fine->stylesize * sizeof(*fine->style));
 	}
 
 	/* If there's a syntax colorer, use it */
-	if (fine->colorer)
-		fine->colorer(fine);
+	if (fine->style_hook)
+		fine->style_hook(fine);
+
+	/* Convert NULL style to mean "same as the previous char" except that
+	 * at the first char or spaces it means "normal". (Note that fine->line doesn't
+	 * contain a copy of the prompt; that's added in image.c)
+	 */
+	if (!fine->style[0])
+		fine->style[0] = "normal";
+	for (col = 1; fine->line[col]; col++) {
+		if (!fine->style[col]) {
+			if ((unsigned char)fine->line[col]  <= ' ')
+				fine->style[col] = "normal";
+			else
+				fine->style[col] = fine->style[col - 1];
+		}
+	}
 
 	/* If a selection is pending, then force the selected range to use
 	 * style "selection".
