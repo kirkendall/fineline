@@ -123,12 +123,16 @@ imglog("start_new_row(), img->cursorrow=%d, img->usedrows=%d, img->toprow=%d\n",
 		if (img->cursorrow > 0)
 			img->cursorrow--;
 	}
-	img->rowsize = 0;
+
+	/* Initialize the row */
+	img->rowsize = 20;
+	img->row[img->thisrow] = malloc(img->rowsize);
+	img->style[img->thisrow] = calloc(img->rowsize, sizeof(char*));
 	img->thiscol = 0;
 	img->rowpos = 0;
 }
 
-/* Add a wide character to a row.  If there isn't room in the row, then
+/* Add a Unicode character to a row.  If there isn't room in the row, then
  * add a new row and add it there.  Note that the text is passed as both a
  * wchar_t and a char*.
  *
