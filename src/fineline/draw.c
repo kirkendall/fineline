@@ -64,8 +64,8 @@ void fineline_draw(fineline_t *fine, int plain)
 		fine->style_hook(fine);
 
 	/* Convert NULL style to mean "same as the previous char" except that
-	 * at the first char or spaces it means "normal". (Note that fine->line doesn't
-	 * contain a copy of the prompt; that's added in image.c)
+	 * at the first char or spaces it means "normal". (Note that fine->line
+	 * doesn't contain a copy of the prompt; that's added in image.c)
 	 */
 	if (!fine->style[0])
 		fine->style[0] = "normal";
